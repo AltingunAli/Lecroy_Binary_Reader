@@ -1,13 +1,12 @@
 ####################################################################################################
 ####################################################################################################
-#                                 LECROY BINARY READER                                             #
+# LECROY BINARY READER
 ####################################################################################################
 ####################################################################################################
 
 A complete data processing pipeline for converting LeCroy oscilloscope binary files (`.trc`) 
 into ROOT format for physics analysis. This software is designed for nuclear/particle physics 
 experiments requiring synchronized multi-channel waveform analysis.
-
 
 ##-------------------------------------------------------------------------------------------------#
 ## Overview
@@ -25,7 +24,7 @@ This project provides a three-stage data processing pipeline:
 # Directory Structure
 ##-------------------------------------------------------------------------------------------------#
 
-Lecroy_Binary_Reader/Bin2Tree/ # Conversion program folder
+Lecroy_Binary_Reader/Bin2Tree/
 ├── bin2tree.cxx # Main conversion program
 ├── Makefile # Build configuration
 ├── obj/ # Object files (created during build)
@@ -34,21 +33,6 @@ Lecroy_Binary_Reader/Bin2Tree/ # Conversion program folder
 ├── PathNames.h # User configuration paths
 └── readLeCroyBinary.h # LeCroy binary format structure
 
-
-Lecroy_Binary_Reader/
-├── makeTree.cxx # Launcher for single-channel processing
-├── makeTreeMulti.cxx # Launcher for multi-channel processing
-├── analyseTree.cxx # Launcher for physics analysis
-├── MakeTreefromRawTreeProduction.C # ROOT macro for raw processing
-├── MakeTreefromRawTreeProductionMulti.C # ROOT macro for multi-channel processing
-├── MakeTreefromRawTreeProductionDeb.C # Debug version of raw processing
-├── AnalyseTreeProduction.C # ROOT macro for physics analysis
-├── MyFunctions.C # Utility functions
-├── MyFunctions.h # Function declarations and constants
-├── Makefile # Build configuration
-├── obj/ # Object files (created during build)
-├── dep/ # Dependency files (created during build)
-└── bin/ # Executables (created during build)
 
 ##-------------------------------------------------------------------------------------------------#
 ## Prerequisites
