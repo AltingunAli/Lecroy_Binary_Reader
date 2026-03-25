@@ -8,9 +8,7 @@ A complete data processing pipeline for converting LeCroy oscilloscope binary fi
 into ROOT format for physics analysis. This software is designed for nuclear/particle physics 
 experiments requiring synchronized multi-channel waveform analysis.
 
-##-------------------------------------------------------------------------------------------------#
 ## Overview
-##-------------------------------------------------------------------------------------------------#
 
 This project provides a three-stage data processing pipeline:
 
@@ -20,9 +18,7 @@ This project provides a three-stage data processing pipeline:
 3. **Physics Analysis** (`analyseTree`) - Extracts pulse parameters (amplitude, charge, timing) 
      and produces physics quantities
 
-##-------------------------------------------------------------------------------------------------#
-# Directory Structure
-##-------------------------------------------------------------------------------------------------#
+## Directory Structure
 
 Lecroy_Binary_Reader/Bin2Tree/<br>
 ├── bin2tree.cxx # Main conversion program<br>
@@ -49,34 +45,30 @@ Lecroy_Binary_Reader/
 ├── dep/ # Dependency files (created during build)<br>
 └── bin/ # Executables (created during build)<br>
 
-##-------------------------------------------------------------------------------------------------#
 ## Prerequisites
-##-------------------------------------------------------------------------------------------------#
-# Required Software
+### Required Software
 - **ROOT** (version 6.14 or later) - [Download](https://root.cern/install/)
 - **C++ compiler** with C++11 support (g++ or clang)
 - **make** build system
 
-# Environment Setup
+### Environment Setup
 Ensure ROOT is properly installed and configured:
 
-# Check ROOT installation
+### Check ROOT installation
 root-config --version
 
-# Verify ROOT libraries
+### Verify ROOT libraries
 root-config --libs
 
-##-------------------------------------------------------------------------------------------------#
 ## Directory Structure
-##-------------------------------------------------------------------------------------------------#
 
-1. Clone the Repository
+### 1. Clone the Repository
 
 	git clone https://github.com/AltingunAli/Lecroy_Binary_Reader.git
 	cd Lecroy_Binary_Reader
 
 
-2. Configure Paths
+### 2. Configure Paths
 
 	Edit PathNames.h to set your data directories:
 
@@ -96,7 +88,7 @@ root-config --libs
 	// Base working directory (must be set correctly)
 	#define WORKDIR "/path/to/Lecroy_Binary_Reader"
 
-3. Build the Code
+### 3. Build the Code
 
 	# Clean previous builds (optional)
 	make clean
@@ -107,9 +99,7 @@ root-config --libs
 	# The executables will be created in the bin/ directory
 	ls bin/
 
-##-------------------------------------------------------------------------------------------------#
 ## Data Organization
-##-------------------------------------------------------------------------------------------------#
 
 	The code expects raw LeCroy binary files organized as:
 
@@ -122,10 +112,7 @@ root-config --libs
 	    ├── C3trace00001.trc             # Channel 3, file 00001
 	    └── C4trace00001.trc             # Channel 4, file 00001
 
-##-------------------------------------------------------------------------------------------------#
 ## Naming Convention:
-##-------------------------------------------------------------------------------------------------#
-
 
 	S001 - Detector number (3-digit, can be 3, 4, or 6 digits)
 
@@ -139,11 +126,9 @@ root-config --libs
 
 	00001 - File sequence number (5-digit)
 
-##-------------------------------------------------------------------------------------------------#
 ## Usage
-##-------------------------------------------------------------------------------------------------#
 
-	Step 1: Convert Binary to Raw ROOT Tree
+	### Step 1: Convert Binary to Raw ROOT Tree
 
 		cd bin
 
@@ -167,7 +152,7 @@ root-config --libs
 	    		Automatically launches the next processing stage
  
 
-	Step 2: Process Raw Tree (Baseline Correction)
+	### Step 2: Process Raw Tree (Baseline Correction)
 
 		This step is automatically triggered by bin2tree, but can be run manually:
 		
@@ -188,7 +173,7 @@ root-config --libs
     			Generates diagnostic plots (baseline evolution, RMS evolution)
 
 
-	Step 3: Physics Analysis
+	### Step 3: Physics Analysis
 		
 		# Run analysis with default thresholds
 		./analyseTree <detNo> <runNo>
@@ -215,18 +200,15 @@ root-config --libs
 
 			Saves parameter tree and summary plots
 
-
-##-------------------------------------------------------------------------------------------------#
 ## Output Files
-##-------------------------------------------------------------------------------------------------#
 
-	Stage 1 Output (Raw Tree)
+	### Stage 1 Output (Raw Tree)
 
 		/Data/dataTrees/
 		└── S001-01-500-200_PRODUCTIONraw_tree.root
     		└── TreeWithRawData         # Raw waveforms with calibration
 
-	Stage 2 Output (Processed Tree)
+	### Stage 2 Output (Processed Tree)
 
 		/Data/processedTrees/
 		└── S001-01-500-200_PRODUCTION_tree.root
@@ -241,7 +223,7 @@ root-config --libs
         		├── nn                  # Nanosecond part
         		└── fitstatus1          # Fit quality flag
 
-	Stage 3 Output (Physics Analysis)
+	### Stage 3 Output (Physics Analysis)
 
 		/Data/processedTrees/
 		└── S001-01-500-200_PRODUCTION_<particle>_treeParam_aThXmV_nThXmV.root
@@ -254,9 +236,7 @@ root-config --libs
 		├── Summary_*.pdf              # Complete analysis summary
 		└── Pedestals_*.png            # Baseline monitoring
 
-##-------------------------------------------------------------------------------------------------#
 ## Configuration Parameters
-##-------------------------------------------------------------------------------------------------#
 
 	---------------------------------------------------------------------------
 	PathNames.h
@@ -282,47 +262,41 @@ root-config --libs
 	nTh		-300.0 mV	Neutron discrimination threshold
 	inverse		1		Signal polarity (1 for positive, -1 for negative)
 
-
-##-------------------------------------------------------------------------------------------------#
 ## Troubleshooting
-##-------------------------------------------------------------------------------------------------#
 
 	Common Issues
 
-	1. "Folder for detector Sxxx run xx not found"
+	### 1. "Folder for detector Sxxx run xx not found"
 
     		Check raw data path in PathNames.h
 
     		Verify folder naming: Sxxx-xx-* (e.g., S001-01-500-200)
 
-	2. "No binary (*.trc) files found"
+	### 2. "No binary (*.trc) files found"
 
     		Ensure .trc files exist in the raw data folder
 
 		    Check file naming: C1*.trc, C2*.trc, etc.
 
-	3. "Failed to open root file"
+	### 3. "Failed to open root file"
 
 		    Verify output directory exists and is writable
 
 		    Check that Stage 1 completed successfully
 
-	4. "Missing separator" error during make
+	### 4. "Missing separator" error during make
 
 		    Use the provided Makefile (tabs vs spaces issue fixed)
 
 		    Run make clean and try again
 
-	5. ROOT library not found
+	### 5. ROOT library not found
 
 		    Ensure ROOT is installed: which root
 
 		    Add ROOT to your PATH: source /path/to/root/bin/thisroot.sh
 
-
-##-------------------------------------------------------------------------------------------------#
 ## Debug Mode
-##-------------------------------------------------------------------------------------------------#
 
 	For debugging, enable debug flags in MyFunctions.h:
 
@@ -334,41 +308,35 @@ root-config --libs
 
 	make clean
 	make
-
-##-------------------------------------------------------------------------------------------------#
+	
 ## Example Workflow
-##-------------------------------------------------------------------------------------------------#
 
-
-	# 1. Set up paths (edit PathNames.h first)
+	### 1. Set up paths (edit PathNames.h first)
 	cd /path/to/Lecroy_Binary_Reader
 
-	# 2. Build the code
+	### 2. Build the code
 	make
 
-	# 3. Convert binary files to ROOT tree
+	### 3. Convert binary files to ROOT tree
 	cd bin
 	./bin2tree 1 1
 
-	# 4. The raw processing will start automatically
-	# You'll see output like:
-	#   Executing: ./makeTree 1 1
-	#   Creation of processed data tree has started...
+	### 4. The raw processing will start automatically
+	You'll see output like:
+		Executing: ./makeTree 1 1
+		Creation of processed data tree has started...
 
-	# 5. Run analysis manually if needed
+	### 5. Run analysis manually if needed
 	./analyseTree 1 1
 
-	# 6. View results
-	# Open root file:
+	### 6. View results
+	Open root file:
 	root -l /path/to/Data/processedTrees/S001-01-500-200_PRODUCTION_tree.root
 
-	# View plots:
+	### View plots:
 	ls /path/to/plots/S001/
 
-##-------------------------------------------------------------------------------------------------#
 ## File Descriptions
-##-------------------------------------------------------------------------------------------------#
-
 	---------------------------------------------------------------------------
 	Core Programs
 	---------------------------------------------------------------------------
@@ -400,9 +368,7 @@ root-config --libs
 	readLeCroyBinary.h		LeCroy binary format structure
 	PathNames.h			User configuration
 
-##-------------------------------------------------------------------------------------------------#
 ## Contributing
-##-------------------------------------------------------------------------------------------------#
 
 	When modifying the code:
 
