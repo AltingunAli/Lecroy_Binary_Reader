@@ -36,18 +36,18 @@ Lecroy_Binary_Reader/Bin2Tree/<br>
 
 Lecroy_Binary_Reader/
 ├── makeTree.cxx # Launcher for single-channel processing<br>
-├── makeTreeMulti.cxx # Launcher for multi-channel processing
-├── analyseTree.cxx # Launcher for physics analysis
-├── MakeTreefromRawTreeProduction.C # ROOT macro for raw processing
-├── MakeTreefromRawTreeProductionMulti.C # ROOT macro for multi-channel processing
-├── MakeTreefromRawTreeProductionDeb.C # Debug version of raw processing
-├── AnalyseTreeProduction.C # ROOT macro for physics analysis
-├── MyFunctions.C # Utility functions
-├── MyFunctions.h # Function declarations and constants
-├── Makefile # Build configuration
-├── obj/ # Object files (created during build)
-├── dep/ # Dependency files (created during build)
-└── bin/ # Executables (created during build)
+├── makeTreeMulti.cxx # Launcher for multi-channel processing<br>
+├── analyseTree.cxx # Launcher for physics analysis<br>
+├── MakeTreefromRawTreeProduction.C # ROOT macro for raw processing<br>
+├── MakeTreefromRawTreeProductionMulti.C # ROOT macro for multi-channel processing<br>
+├── MakeTreefromRawTreeProductionDeb.C # Debug version of raw processing<br>
+├── AnalyseTreeProduction.C # ROOT macro for physics analysis<br>
+├── MyFunctions.C # Utility functions<br>
+├── MyFunctions.h # Function declarations and constants<br>
+├── Makefile # Build configuration<br>
+├── obj/ # Object files (created during build)<br>
+├── dep/ # Dependency files (created during build)<br>
+└── bin/ # Executables (created during build)<br>
 
 ##-------------------------------------------------------------------------------------------------#
 ## Prerequisites
