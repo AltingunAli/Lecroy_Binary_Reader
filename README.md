@@ -24,15 +24,30 @@ This project provides a three-stage data processing pipeline:
 # Directory Structure
 ##-------------------------------------------------------------------------------------------------#
 
-Lecroy_Binary_Reader/Bin2Tree/
-├── bin2tree.cxx # Main conversion program
+Lecroy_Binary_Reader/Bin2Tree/<br>
+├── bin2tree.cxx # Main conversion program<br>
+├── Makefile # Build configuration<br>
+├── obj/ # Object files (created during build)<br>
+├── dep/ # Dependency files (created during build)<br>
+├── bin/ # Executables (created during build)<br>
+├── PathNames.h # User configuration paths<br>
+└── readLeCroyBinary.h # LeCroy binary format structure<br>
+
+
+Lecroy_Binary_Reader/
+├── makeTree.cxx # Launcher for single-channel processing<br>
+├── makeTreeMulti.cxx # Launcher for multi-channel processing
+├── analyseTree.cxx # Launcher for physics analysis
+├── MakeTreefromRawTreeProduction.C # ROOT macro for raw processing
+├── MakeTreefromRawTreeProductionMulti.C # ROOT macro for multi-channel processing
+├── MakeTreefromRawTreeProductionDeb.C # Debug version of raw processing
+├── AnalyseTreeProduction.C # ROOT macro for physics analysis
+├── MyFunctions.C # Utility functions
+├── MyFunctions.h # Function declarations and constants
 ├── Makefile # Build configuration
 ├── obj/ # Object files (created during build)
 ├── dep/ # Dependency files (created during build)
-├── bin/ # Executables (created during build)
-├── PathNames.h # User configuration paths
-└── readLeCroyBinary.h # LeCroy binary format structure
-
+└── bin/ # Executables (created during build)
 
 ##-------------------------------------------------------------------------------------------------#
 ## Prerequisites
