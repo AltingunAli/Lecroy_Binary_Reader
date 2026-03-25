@@ -128,7 +128,7 @@ root-config --libs
 
 ## Usage
 
-	### Step 1: Convert Binary to Raw ROOT Tree
+### Step 1: Convert Binary to Raw ROOT Tree
 
 		cd bin
 
@@ -152,7 +152,7 @@ root-config --libs
 	    		Automatically launches the next processing stage
  
 
-	### Step 2: Process Raw Tree (Baseline Correction)
+### Step 2: Process Raw Tree (Baseline Correction)
 
 		This step is automatically triggered by bin2tree, but can be run manually:
 		
@@ -173,7 +173,7 @@ root-config --libs
     			Generates diagnostic plots (baseline evolution, RMS evolution)
 
 
-	### Step 3: Physics Analysis
+### Step 3: Physics Analysis
 		
 		# Run analysis with default thresholds
 		./analyseTree <detNo> <runNo>
@@ -202,13 +202,13 @@ root-config --libs
 
 ## Output Files
 
-	### Stage 1 Output (Raw Tree)
+### Stage 1 Output (Raw Tree)
 
 		/Data/dataTrees/
 		└── S001-01-500-200_PRODUCTIONraw_tree.root
     		└── TreeWithRawData         # Raw waveforms with calibration
 
-	### Stage 2 Output (Processed Tree)
+### Stage 2 Output (Processed Tree)
 
 		/Data/processedTrees/
 		└── S001-01-500-200_PRODUCTION_tree.root
@@ -223,7 +223,7 @@ root-config --libs
         		├── nn                  # Nanosecond part
         		└── fitstatus1          # Fit quality flag
 
-	### Stage 3 Output (Physics Analysis)
+### Stage 3 Output (Physics Analysis)
 
 		/Data/processedTrees/
 		└── S001-01-500-200_PRODUCTION_<particle>_treeParam_aThXmV_nThXmV.root
@@ -266,31 +266,31 @@ root-config --libs
 
 	Common Issues
 
-	### 1. "Folder for detector Sxxx run xx not found"
+### 1. "Folder for detector Sxxx run xx not found"
 
     		Check raw data path in PathNames.h
 
     		Verify folder naming: Sxxx-xx-* (e.g., S001-01-500-200)
 
-	### 2. "No binary (*.trc) files found"
+### 2. "No binary (*.trc) files found"
 
     		Ensure .trc files exist in the raw data folder
 
 		    Check file naming: C1*.trc, C2*.trc, etc.
 
-	### 3. "Failed to open root file"
+### 3. "Failed to open root file"
 
 		    Verify output directory exists and is writable
 
 		    Check that Stage 1 completed successfully
 
-	### 4. "Missing separator" error during make
+### 4. "Missing separator" error during make
 
 		    Use the provided Makefile (tabs vs spaces issue fixed)
 
 		    Run make clean and try again
 
-	### 5. ROOT library not found
+### 5. ROOT library not found
 
 		    Ensure ROOT is installed: which root
 
@@ -311,29 +311,29 @@ root-config --libs
 	
 ## Example Workflow
 
-	### 1. Set up paths (edit PathNames.h first)
+### 1. Set up paths (edit PathNames.h first)
 	cd /path/to/Lecroy_Binary_Reader
 
-	### 2. Build the code
+### 2. Build the code
 	make
 
-	### 3. Convert binary files to ROOT tree
+### 3. Convert binary files to ROOT tree
 	cd bin
 	./bin2tree 1 1
 
-	### 4. The raw processing will start automatically
+### 4. The raw processing will start automatically
 	You'll see output like:
 		Executing: ./makeTree 1 1
 		Creation of processed data tree has started...
 
-	### 5. Run analysis manually if needed
+### 5. Run analysis manually if needed
 	./analyseTree 1 1
 
-	### 6. View results
+### 6. View results
 	Open root file:
 	root -l /path/to/Data/processedTrees/S001-01-500-200_PRODUCTION_tree.root
 
-	### View plots:
+### View plots:
 	ls /path/to/plots/S001/
 
 ## File Descriptions
