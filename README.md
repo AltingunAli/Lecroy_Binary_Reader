@@ -34,6 +34,7 @@ Lecroy_Binary_Reader/Bin2Tree/ # Conversion program folder
 ├── PathNames.h # User configuration paths
 └── readLeCroyBinary.h # LeCroy binary format structure
 
+
 Lecroy_Binary_Reader/
 ├── makeTree.cxx # Launcher for single-channel processing
 ├── makeTreeMulti.cxx # Launcher for multi-channel processing
@@ -52,25 +53,22 @@ Lecroy_Binary_Reader/
 ##-------------------------------------------------------------------------------------------------#
 ## Prerequisites
 ##-------------------------------------------------------------------------------------------------#
-
-### Required Software
+# Required Software
 - **ROOT** (version 6.14 or later) - [Download](https://root.cern/install/)
 - **C++ compiler** with C++11 support (g++ or clang)
 - **make** build system
 
-### Environment Setup
+# Environment Setup
 Ensure ROOT is properly installed and configured:
-```bash
+
 # Check ROOT installation
 root-config --version
 
 # Verify ROOT libraries
 root-config --libs
 
-
-
 ##-------------------------------------------------------------------------------------------------#
-## Installation
+## Directory Structure
 ##-------------------------------------------------------------------------------------------------#
 
 1. Clone the Repository
