@@ -23,6 +23,10 @@
 #include <TTimeStamp.h>
 #include <sstream>
 
+#include <filesystem>
+
+namespace fs = std::filesystem;
+
 // #include <iomanip>
 
 // void replaceEOL(char *fnames)
@@ -974,8 +978,26 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     //       std::cout<<"npt = "<<npt<< std::endl;
     //  return 0;
 
-    if (draw) {
+    // check if the Event_Waveform folder is present, if not create it
 
+    // Build the folder path once
+    std::string outDir = Form("%s/Event_WaveForms/S%03d-%02d-%d-%d", WORKDIR,
+                              detNo, runNo, vm, vd);
+
+    // Create it if it does not exist
+    std::error_code ec;
+    if (!fs::exists(outDir)) {
+      fs::create_directories(outDir, ec);
+      if (ec) {
+        std::cerr << "Failed to create directory: " << outDir
+                  << " Error: " << ec.message() << std::endl;
+      }
+    }
+
+    // if draw is on, the waveform of the event is displayed and some of its
+    // properties are printed on the console. This is useful for checking the
+    // quality of the data and the performance of the detector.
+    if (draw) {
       for (int i = 0; i < maxpoints; i++) {
         amplC[i] = amplSum[i];
       }
@@ -1082,7 +1104,6 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
         //-----------------------------------------------------//
         //---- Write waveform data to text file ---------------//
         //-----------------------------------------------------//
-        //--Altingun--//
         if (saveWF) {
           ofstream myfile;
           myfile.open(

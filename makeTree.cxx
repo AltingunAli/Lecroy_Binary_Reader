@@ -5,10 +5,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
+#include <filesystem>  // C++17 filesystem
 
 #include "MyFunctions.h"
 
 using namespace std;
+namespace fs = std::filesystem;  // fs shortcut
 
 int main(int argc, char **argv) {
   int detid = 0;
@@ -43,10 +45,27 @@ int main(int argc, char **argv) {
 
   char fname[100];
   snprintf(fname, 100, "%s/logs/logS%03d-%02d.txt", WORKDIR, detid, runid);
+
+  // Create logs/ if needed - does NOTHING if it already exists
+  fs::path log_dir(WORKDIR);
+  log_dir /= "logs";
+  std::error_code error_code; // non-throwing version
+  bool created = fs::create_directories(log_dir, error_code);
+
+  if (error_code) {
+    std::cout << "Failed to create logs/: " << error_code.message()
+              << std::endl;
+    return -6;
+  }
+
+  // std::cout<< "Created boolean: " << created << std::endl;
+
   FILE *ftmp = fopen(fname, "w");
 
-  if (ftmp == nullptr)
-    std::cout << "ftmp is fucked!" << std::endl;
+  if (ftmp == nullptr) {
+    std::cout << "log  is not created!" << std::endl;
+    return -6;
+  }
 
   fclose(ftmp);
 
@@ -58,5 +77,5 @@ int main(int argc, char **argv) {
   cout << "Executing:\n" << command << endl;
   system(command);
 
-  return (1);
+  return (0);
 }
