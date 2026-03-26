@@ -262,7 +262,7 @@ int main(int argc, char *argv[]) {
   /// will be analysed. make sure that the file does not exist by over-writing
   /// and deleting it.
   for (int i = 0; i < 4; i++) {
-    snprintf(fname[i], 1000, "%s/files%d.txt", dirname, i + 1);
+    snprintf(fname[i], 1000, "%s/Channel%d.txt", dirname, i + 1);
     std::cout << "    Creating file list: |" << fname[i] << "|" << std::endl;
     FILE *ftmp = fopen(fname[i], "w");
     if (ftmp == NULL) {
@@ -282,16 +282,17 @@ int main(int argc, char *argv[]) {
 
     if (tst == 0) {
       std::cout << "Files list for detector S" << detNo << " run " << runNo
-                << " created in Data/Raw/ directory: \n"
+                << " created in Data/Raw/ directory \n"
                 << std::endl;
-    } else if (tst != 0) {
-      std::cout << command << std::endl << "returned: " << tst << std::endl;
-      std::cout << "Files lists for detector S" << detNo << " run " << runNo
-                << " can not be created in Data/Raw/ directory: \n"
-                << std::endl
-                << "Exiting..." << std::endl;
-      return tst;
     }
+    // } else if (tst != 0) {
+    //   // std::cout << command << std::endl << "returned: " << tst << std::endl;
+    //   std::cout << "Channel " << i + 1 << ": data for detector S" << detNo << " run " << runNo
+    //             << " can not be created in Data/Raw/ directory: \n"
+    //             << std::endl;
+    //             // << "Exiting..." << std::endl;
+    //   // return tst;
+    // }
   }
 
   std::cout << "\n    File lists have been created!\n" << std::endl;
