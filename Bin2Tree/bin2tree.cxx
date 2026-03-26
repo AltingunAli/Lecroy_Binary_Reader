@@ -81,10 +81,10 @@ int main(int argc, char *argv[]) {
   if (argc > 4)
     snprintf(basedirname, 1000, "%s", argv[4]);
 
-  char command[1000]; // command array for system commands
-  int vm, vd; // mesh and drift voltages, will be read from the folder name
-  float bthick,
-      dgap; // mylar thickness and drift gap, will be read from the folder name
+  char command[1000];     // command array for system commands
+  int vm = 500, vd = 500; // mesh and drift voltages, they are initialized here,
+                          // but will be read from the folder name float bthick,
+  // dgap; // mylar thickness and drift gap, will be read from the folder name
   string filetype = ""; //
   int width = 3; // width of the detector number in the folder name, it will be
                  // determined based on the detector number
@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
       return -2;
     }
     // Write the data to the log file
-    int rtmp, dtmp;
+    int rtmp = 0, dtmp = 0;
     char ftypetmp[500];
     strcpy(ftypetmp, "");
 
@@ -234,7 +234,7 @@ int main(int argc, char *argv[]) {
   sscanf(drift, "%d", &drft);
 
   const int MaxFiles = 100000;
-  const int MAXSEG = 10000;
+  // const int MAXSEG = 10000;
 
   std::cout << "___________________________________________________"
                "\n\nStarting the .trc to "
@@ -279,6 +279,19 @@ int main(int argc, char *argv[]) {
              i + 1, fname[i]);
     //       std::cout << command<<std::endl;
     tst = system(command);
+
+    if (tst == 0) {
+      std::cout << "Files list for detector S" << detNo << " run " << runNo
+                << " created in Data/Raw/ directory: \n"
+                << std::endl;
+    } else if (tst != 0) {
+      std::cout << command << std::endl << "returned: " << tst << std::endl;
+      std::cout << "Files lists for detector S" << detNo << " run " << runNo
+                << " can not be created in Data/Raw/ directory: \n"
+                << std::endl
+                << "Exiting..." << std::endl;
+      return tst;
+    }
   }
 
   std::cout << "\n    File lists have been created!\n" << std::endl;
@@ -383,8 +396,8 @@ int main(int argc, char *argv[]) {
   // Create a root file and a tree to store the data.
   // The tree will have branches for the event number, time, and the amplitude
   // of the signal for each channel.
-  int maxFile = 100000;
-  int offSet[4] = {0, 0, 0, 0};
+  // int maxFile = 100000;
+  // int offSet[4] = {0, 0, 0, 0};
   // double *amplC[4];
   std::vector<std::vector<double>> amplC(4);
   for (int i = 0; i < 4; i++) {
@@ -398,11 +411,11 @@ int main(int argc, char *argv[]) {
   int spoints[] = {0, 0, 0, 0};
   int tchan = -1;
   FILE *file;
-  uint32_t number = 0;
+  // uint32_t number = 0;
   char date[40];
   unsigned long long int epoch;
   unsigned long long int nn;
-  double dt, t1;
+  double dt;
   vector<double> w1, w2, w3, w4;
 
   snprintf(ofname, 1000, "%s/S%03d-%02d-%d-%d", basedirname, detNo, runNo, vm,
@@ -728,9 +741,9 @@ int main(int argc, char *argv[]) {
     // 	std::cout <<"file "<<ev<<  "event"<<evNo<< "II = "<<II << std::endl;
 
     for (int ii = 0; ii < II; ii++) {
-      int chk = 0;
-      int bit = 0;
-      number = 0;
+      // int chk = 0;
+      // int bit = 0;
+      // int number = 0;
 
       if (II > 1) {
         if (active[0])
@@ -1002,7 +1015,7 @@ int main(int argc, char *argv[]) {
     //       fout.close();
   } // end of loop over the number of the files and fill the tree
 
-  int tstt;
+  int tstt = -555;
   if (evNo < 50000) {
     //       tree.OptimizeBaskets(100000000,1.1,"d" );
     tree.OptimizeBaskets(100000000, 1.1, "");
@@ -1021,6 +1034,13 @@ int main(int argc, char *argv[]) {
              detNo, runNo);
     std::cout << "Executing " << command << std::endl;
     tstt = system(command);
+
+    // Error handling for the system call
+    if (tstt != 0) {
+      std::cerr << "Error executing command: " << command << std::endl;
+      return tstt; // Return the error code from the system call
+    }
+
     std::cout
         << "Creation of processed data tree 1 has started! Will sleep for 5 "
            "sec before continuing!"
@@ -1033,6 +1053,12 @@ int main(int argc, char *argv[]) {
              detNo, runNo);
     std::cout << "Executing " << command << std::endl;
     tstt = system(command);
+
+    // Error handling for the system call
+    if (tstt != 0) {
+      std::cerr << "Error executing command: " << command << std::endl;
+      return tstt; // Return the error code from the system call
+    }
     std::cout
         << "Creation of processed data tree 2 has started! Will sleep for 5 "
            "sec before exiting!"
@@ -1045,6 +1071,13 @@ int main(int argc, char *argv[]) {
              detNo, runNo);
     std::cout << "Executing " << command << std::endl;
     tstt = system(command);
+
+    // Error handling for the system call
+    if (tstt != 0) {
+      std::cerr << "Error executing command: " << command << std::endl;
+      return tstt; // Return the error code from the system call
+    }
+
     std::cout
         << "Creation of processed data tree 3 has started! Will sleep for 5 "
            "sec before exiting!"
@@ -1058,6 +1091,13 @@ int main(int argc, char *argv[]) {
              detNo, runNo);
     std::cout << "Executing " << command << std::endl;
     tstt = system(command);
+
+    // Error handling for the system call
+    if (tstt != 0) {
+      std::cerr << "Error executing command: " << command << std::endl;
+      return tstt; // Return the error code from the system call
+    }
+
     std::cout
         << "Creation of processed data tree 1 has started! Will sleep for 5 "
            "sec before continuing!"
@@ -1070,6 +1110,13 @@ int main(int argc, char *argv[]) {
              detNo, runNo);
     std::cout << "Executing " << command << std::endl;
     tstt = system(command);
+
+    // Error handling for the system call
+    if (tstt != 0) {
+      std::cerr << "Error executing command: " << command << std::endl;
+      return tstt; // Return the error code from the system call
+    }
+
     std::cout
         << "Creation of processed data tree 2 has started! Will sleep for 5 "
            "sec before exiting!"
@@ -1083,6 +1130,13 @@ int main(int argc, char *argv[]) {
              runNo);
     std::cout << "Executing " << command << std::endl;
     tstt = system(command);
+
+    // Error handling for the system call
+    if (tstt != 0) {
+      std::cerr << "Error executing command: " << command << std::endl;
+      return tstt; // Return the error code from the system call
+    }
+
     std::cout
         << "Creation of processed data tree has started! Will sleep for 10 "
            "sec before exiting!"
@@ -1223,7 +1277,8 @@ int ffread(unsigned short int byteOrder, void *val, unsigned int nByte,
     return 0;
   }
 }
-// Print the contents of a wavedesc structure to standard error for debugging purposes
+// Print the contents of a wavedesc structure to standard error for debugging
+// purposes
 void printWavedesc(wavedesc desc) {
   cerr << "descriptor_name\t" << desc.descriptor_name << "\n";
   cerr << "template_name\t" << desc.template_name << "\n";
@@ -1311,4 +1366,3 @@ void printWavedesc(wavedesc desc) {
 // //     fnames[nchar+1]='\0';
 //
 // }
-
