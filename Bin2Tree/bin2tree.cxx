@@ -1029,9 +1029,9 @@ int main(int argc, char *argv[]) {
   cerr << flush << "\rDone\n";
 
   // Call the launcher scripts to run MakeTreefromRawTreeProduction.C
-  snprintf(command, 1000, "cd %s\n ./makeTree %d %d \n", WORKDIR, detNo, runNo);
+  snprintf(command, 1000, "cd %s\n ./bin/makeTree %d %d \n", WORKDIR, detNo, runNo);
   if (detNo >= 10000) {
-    snprintf(command, 1000, "cd %s\n ./makeTreeMulti %d %d 1 \n", WORKDIR,
+    snprintf(command, 1000, "cd %s\n ./bin/makeTreeMulti %d %d 1 \n", WORKDIR,
              detNo, runNo);
     std::cout << "Executing " << command << std::endl;
     tstt = system(command);
@@ -1050,7 +1050,7 @@ int main(int argc, char *argv[]) {
       std::cout << "\rexit in " << 5 - i << "... " << flush;
       gSystem->Sleep(1000);
     }
-    snprintf(command, 1000, "cd %s\n ./makeTreeMulti %d %d 2 \n", WORKDIR,
+    snprintf(command, 1000, "cd %s\n ./bin/makeTreeMulti %d %d 2 \n", WORKDIR,
              detNo, runNo);
     std::cout << "Executing " << command << std::endl;
     tstt = system(command);
@@ -1068,7 +1068,7 @@ int main(int argc, char *argv[]) {
       std::cout << "\rexit in " << 5 - i << "... " << flush;
       gSystem->Sleep(1000);
     }
-    snprintf(command, 1000, "cd %s\n ./makeTreeMulti %d %d 3 \n", WORKDIR,
+    snprintf(command, 1000, "cd %s\n ./bin/makeTreeMulti %d %d 3 \n", WORKDIR,
              detNo, runNo);
     std::cout << "Executing " << command << std::endl;
     tstt = system(command);
@@ -1088,7 +1088,7 @@ int main(int argc, char *argv[]) {
       gSystem->Sleep(1000);
     }
   } else if (detNo >= RUNMAX) {
-    snprintf(command, 1000, "cd %s\n ./makeTreeMulti %d %d 2 \n", WORKDIR,
+    snprintf(command, 1000, "cd %s\n ./bin/makeTreeMulti %d %d 2 \n", WORKDIR,
              detNo, runNo);
     std::cout << "Executing " << command << std::endl;
     tstt = system(command);
@@ -1107,7 +1107,7 @@ int main(int argc, char *argv[]) {
       std::cout << "\rexit in " << 5 - i << "... " << flush;
       gSystem->Sleep(1000);
     }
-    snprintf(command, 1000, "cd %s\n ./makeTreeMulti %d %d 3 \n", WORKDIR,
+    snprintf(command, 1000, "cd %s\n ./bin/makeTreeMulti %d %d 3 \n", WORKDIR,
              detNo, runNo);
     std::cout << "Executing " << command << std::endl;
     tstt = system(command);
@@ -1127,7 +1127,7 @@ int main(int argc, char *argv[]) {
       gSystem->Sleep(1000);
     }
   } else {
-    snprintf(command, 1000, "cd %s\n ./makeTree %d %d \n", WORKDIR, detNo,
+    snprintf(command, 1000, "cd %s\n ./bin/makeTree %d %d \n", WORKDIR, detNo,
              runNo);
     std::cout << "Executing " << command << std::endl;
     tstt = system(command);
@@ -1153,7 +1153,7 @@ int main(int argc, char *argv[]) {
     gSystem->Sleep(1000);
   }
   std::cout << "\nBy!" << std::endl;
-  snprintf(command, 1000, "cd %s/Bin2Tree \n", WORKDIR);
+  // snprintf(command, 1000, "cd %s/bin/Bin2Tree \n", WORKDIR);
   //     std::cout<<"Executing "<<command<<std::endl;
   return 0;
 }
