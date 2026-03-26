@@ -122,13 +122,13 @@ int main(int argc, char *argv[]) {
     }
     fclose(ftmp);
     if (detNo < 100)
-      snprintf(command, 1000, "cd %s\nls -d S%03d-%02d*/ > %s", basedatapath,
+      snprintf(command, 1000, "cd %s && ls -d S%03d-%02d*/ > %s", basedatapath,
                detNo, runNo, afile);
     else if (detNo < 10000)
-      snprintf(command, 1000, "cd %s\nls -d S%04d-%02d*/ > %s", basedatapath,
+      snprintf(command, 1000, "cd %s && ls -d S%04d-%02d*/ > %s", basedatapath,
                detNo, runNo, afile);
     else
-      snprintf(command, 1000, "cd %s\nls -d S%06d-%02d*/ > %s", basedatapath,
+      snprintf(command, 1000, "cd %s && ls -d S%06d-%02d*/ > %s", basedatapath,
                detNo, runNo, afile);
 
     int tst = system(command);
@@ -286,8 +286,9 @@ int main(int argc, char *argv[]) {
                 << std::endl;
     }
     // } else if (tst != 0) {
-    //   // std::cout << command << std::endl << "returned: " << tst << std::endl;
-    //   std::cout << "Channel " << i + 1 << ": data for detector S" << detNo << " run " << runNo
+    //   // std::cout << command << std::endl << "returned: " << tst <<
+    //   std::endl; std::cout << "Channel " << i + 1 << ": data for detector S"
+    //   << detNo << " run " << runNo
     //             << " can not be created in Data/Raw/ directory: \n"
     //             << std::endl;
     //             // << "Exiting..." << std::endl;
@@ -1007,6 +1008,11 @@ int main(int argc, char *argv[]) {
         //            tree.OptimizeBaskets(100000000,1.1,"d" );
         tree.OptimizeBaskets(100000000, 1.1, "");
       }
+
+      // std::cout << "About to Fill() - wave1.size()=" << wave1.size()
+      //           << " wave2.size()=" << wave2.size()
+      //           << " wave3.size()=" << wave3.size()
+      //           << " wave4.size()=" << wave4.size() << std::endl;
       tree.Fill();
       evNo++;
 
@@ -1029,16 +1035,18 @@ int main(int argc, char *argv[]) {
   cerr << flush << "\rDone\n";
 
   // Call the launcher scripts to run MakeTreefromRawTreeProduction.C
-  snprintf(command, 1000, "cd %s\n ./bin/makeTree %d %d \n", WORKDIR, detNo, runNo);
+  snprintf(command, 1000, "cd \"%s\" && ./bin//makeTree %d %d \n", WORKDIR,
+           detNo, runNo);
   if (detNo >= 10000) {
-    snprintf(command, 1000, "cd %s\n ./bin/makeTreeMulti %d %d 1 \n", WORKDIR,
-             detNo, runNo);
+    snprintf(command, 1000, "cd \"%s\" && ./bin//makeTreeMulti %d %d 1 \n",
+             WORKDIR, detNo, runNo);
     std::cout << "Executing " << command << std::endl;
     tstt = system(command);
 
     // Error handling for the system call
     if (tstt != 0) {
-      std::cerr << "Error executing command: " << command << std::endl;
+      std::cerr << "Error executing command 1: " << command << std::endl;
+      std::cout << std::endl;
       return tstt; // Return the error code from the system call
     }
 
@@ -1050,14 +1058,15 @@ int main(int argc, char *argv[]) {
       std::cout << "\rexit in " << 5 - i << "... " << flush;
       gSystem->Sleep(1000);
     }
-    snprintf(command, 1000, "cd %s\n ./bin/makeTreeMulti %d %d 2 \n", WORKDIR,
-             detNo, runNo);
+    snprintf(command, 1000, "cd \"%s\" && ./bin//makeTreeMulti %d %d 2 \n",
+             WORKDIR, detNo, runNo);
     std::cout << "Executing " << command << std::endl;
     tstt = system(command);
 
     // Error handling for the system call
     if (tstt != 0) {
-      std::cerr << "Error executing command: " << command << std::endl;
+      std::cerr << "Error executing command 2: " << command << std::endl;
+      std::cout << std::endl;
       return tstt; // Return the error code from the system call
     }
     std::cout
@@ -1068,14 +1077,15 @@ int main(int argc, char *argv[]) {
       std::cout << "\rexit in " << 5 - i << "... " << flush;
       gSystem->Sleep(1000);
     }
-    snprintf(command, 1000, "cd %s\n ./bin/makeTreeMulti %d %d 3 \n", WORKDIR,
-             detNo, runNo);
+    snprintf(command, 1000, "cd \"%s\" && ./bin//makeTreeMulti %d %d 3 \n",
+             WORKDIR, detNo, runNo);
     std::cout << "Executing " << command << std::endl;
     tstt = system(command);
 
     // Error handling for the system call
     if (tstt != 0) {
-      std::cerr << "Error executing command: " << command << std::endl;
+      std::cerr << "Error executing command 3: " << command << std::endl;
+      std::cout << std::endl;
       return tstt; // Return the error code from the system call
     }
 
@@ -1088,14 +1098,15 @@ int main(int argc, char *argv[]) {
       gSystem->Sleep(1000);
     }
   } else if (detNo >= RUNMAX) {
-    snprintf(command, 1000, "cd %s\n ./bin/makeTreeMulti %d %d 2 \n", WORKDIR,
-             detNo, runNo);
+    snprintf(command, 1000, "cd \"%s\" && ./bin//makeTreeMulti %d %d 2 \n",
+             WORKDIR, detNo, runNo);
     std::cout << "Executing " << command << std::endl;
     tstt = system(command);
 
     // Error handling for the system call
     if (tstt != 0) {
-      std::cerr << "Error executing command: " << command << std::endl;
+      std::cerr << "Error executing command 4: " << command << std::endl;
+      std::cout << std::endl;
       return tstt; // Return the error code from the system call
     }
 
@@ -1107,14 +1118,15 @@ int main(int argc, char *argv[]) {
       std::cout << "\rexit in " << 5 - i << "... " << flush;
       gSystem->Sleep(1000);
     }
-    snprintf(command, 1000, "cd %s\n ./bin/makeTreeMulti %d %d 3 \n", WORKDIR,
-             detNo, runNo);
+    snprintf(command, 1000, "cd \"%s\" && ./bin/makeTreeMulti %d %d 3 \n",
+             WORKDIR, detNo, runNo);
     std::cout << "Executing " << command << std::endl;
     tstt = system(command);
 
     // Error handling for the system call
     if (tstt != 0) {
-      std::cerr << "Error executing command: " << command << std::endl;
+      std::cerr << "Error executing command 5: " << command << std::endl;
+      std::cout << std::endl;
       return tstt; // Return the error code from the system call
     }
 
@@ -1127,16 +1139,19 @@ int main(int argc, char *argv[]) {
       gSystem->Sleep(1000);
     }
   } else {
-    snprintf(command, 1000, "cd %s\n ./bin/makeTree %d %d \n", WORKDIR, detNo,
+    snprintf(command, 1000, "cd \"%s\" && ./bin/makeTree %d %d", WORKDIR, detNo,
              runNo);
     std::cout << "Executing " << command << std::endl;
     tstt = system(command);
 
-    // Error handling for the system call
+    // Check if command failed (non-zero return)
     if (tstt != 0) {
-      std::cerr << "Error executing command: " << command << std::endl;
-      return tstt; // Return the error code from the system call
+      std::cerr << "Failed (exit code " << tstt << "): \n" << command
+                << std::endl;
+      return tstt;
     }
+    std::cout << "Command succeeded (exit code " << tstt << ")" << std::endl;
+    std::cout << std::endl;
 
     std::cout
         << "Creation of processed data tree has started! Will sleep for 10 "
