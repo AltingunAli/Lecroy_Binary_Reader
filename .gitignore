@@ -40,5 +40,15 @@
 # debug information files
 *.dwo
 
-# Data folders
+# Folders
 Data/
+bin/
+Bin2Tree/bin/
+Bin2Tree/obj/
+Bin2Tree/dep/
+dep/
+logs/
+obj/
+plots/
+Event_WaveForms/
+
