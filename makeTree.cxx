@@ -1,81 +1,61 @@
-#include <fstream>
-#include <iostream>
-#include <math.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <vector>
-#include <filesystem>  // C++17 filesystem
+#include<stdlib.h>
+#include<stdint.h>
+#include<string.h>
+#include<iostream>
+#include<vector>
+#include<math.h>
+#include<fstream>
 
 #include "MyFunctions.h"
 
 using namespace std;
-namespace fs = std::filesystem;  // fs shortcut
 
-int main(int argc, char **argv) {
-  int detid = 0;
-  int runid = 0;
-  if (argc > 2) {
-    int tst = sscanf(argv[1], "%d", &detid);
-    int tst2 = sscanf(argv[2], "%d", &runid);
-    if (tst <= 0 || tst2 <= 0) {
-      cout << "syntax: makeTree <detector number> <run number>" << endl;
+int main(int argc, char **argv)
+{
+  int detid=0;
+  int runid=0;
+  if (argc>2)  {
+    int tst=sscanf(argv[1],"%d", &detid);
+    int tst2=sscanf(argv[2],"%d", &runid);
+    if (tst<=0||tst2<=0) {
+      cout<<"syntax: makeTree <detector number> <run number>"<<endl; 
       return -1;
     }
-  } else {
-    cout << "syntax: makeTree <detector number> <run number>" << endl;
+  }
+  else {
+    cout<<"syntax: makeTree <detector number> <run number>"<<endl; 
     return -2;
   }
-
-  if (runid < MINRUN || runid > MAXRUN) {
-    cout << "run " << runid << " out of bounts (" << MINRUN << "-" << MAXRUN
-         << ")" << endl;
+    
+  if (runid<MINRUN || runid>MAXRUN){
+    cout<<"run "<<runid<<" out of bounts ("<<MINRUN<<"-"<<MAXRUN<<")"<<endl;
     return -3;
   }
-  if (detid < MINRUN || detid > MAXRUN) {
-    cout << "detector " << detid << " out of bounts (" << MINRUN << "-"
-         << MAXRUN << ")" << endl;
-    return -4;
-  }
-  if (detid == 0) {
-    cout << "Detector number can not be 0. It should be between " << MINRUN
-         << " and " << MAXRUN << endl;
-    return -5;
-  }
+  
+  //  std::cout << "WTF 1!" << std::endl;
 
   char fname[100];
-  snprintf(fname, 100, "%s/logs/logS%03d-%02d.txt", WORKDIR, detid, runid);
+  // std::cout << "WTF 2!" << std::endl;
 
-  // Create logs/ if needed - does NOTHING if it already exists
-  fs::path log_dir(WORKDIR);
-  log_dir /= "logs";
-  std::error_code error_code; // non-throwing version
-  bool created = fs::create_directories(log_dir, error_code);
-
-  if (error_code) {
-    std::cout << "Failed to create logs/: " << error_code.message()
-              << std::endl;
-    return -6;
-  }
-
-  // std::cout<< "Created boolean: " << created << std::endl;
+  snprintf(fname, sizeof(fname), "%s/logs/logS%03d-%02d.txt", WORKDIR, detid, runid);
+  // std::cout << "WTF 3!" << std::endl;
 
   FILE *ftmp = fopen(fname, "w");
+  // std::cout << "WTF 4!  " << fname << std::endl;
 
-  if (ftmp == nullptr) {
-    std::cout << "log  is not created!" << std::endl;
-    return -6;
-  }
+  if (ftmp == nullptr)
+    std::cout << "ftmp is fucked!" << std::endl;
 
   fclose(ftmp);
+  // std::cout << "WTF 5!" << std::endl;
 
   char command[2000];
-  snprintf(command, 2000,
-           "root -b -x '%s/MakeTreefromRawTreeProduction.C+(%d,%d)' >> "
+  snprintf(command, sizeof(command),
+           "root -b -x '%s/MakeTreefromRawTreeProduction.C+(%d,%d)' -q >> "
            "%s/logs/logS%03d-%02d.txt &\n",
            WORKDIR, detid, runid, WORKDIR, detid, runid);
-  cout << "Executing:\n" << command << endl;
+  cout << "executing:\n" << command << endl;
   system(command);
 
-  return (0);
+  return (1);
 }
