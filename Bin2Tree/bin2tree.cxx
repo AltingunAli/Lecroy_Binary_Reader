@@ -327,7 +327,7 @@ int main(int argc, char *argv[]) {
   double *amplC[4];
   for (int i = 0; i < 4; i++) {
     if (active[i])
-      amplC[i] = new double[5000000];
+      amplC[i] = new double[MAXVECSIZE];
   }
 
   int evNo;
