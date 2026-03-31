@@ -15,8 +15,6 @@
 #include <TSystem.h>
 #include <TTimeStamp.h>
 #include <TTree.h>
-#include <cstddef>
-#include <vector>
 
 // void searcheandreplace(char *fnames)
 // {
@@ -34,7 +32,7 @@
 //           fnames[i]='\\';
 //           for (int j=i+1;j<nchar+1;j++)
 // 	    fnames[j]=tmp[j-1];
-// 	std::cout<<fnames<<endl;
+// 	cout<<fnames<<std::endl; 
 // 	  searcheandreplace(&fnames[i+2]);
 //        }
 //
@@ -70,7 +68,7 @@
 //        if (X[i]>mean-3*sigma)
 //        {
 // 	 sum+=Y[i];
-// //          std::cout<<"["<<i<<" | "<<X[i]<<"] - ";
+// //          cout<<"["<<i<<" | "<<X[i]<<"] - ";
 //        }
 //        if (X[i]>mean+4*sigma)
 // 	 break;
@@ -78,48 +76,32 @@
 //    return (sum);
 // }
 
-// ###########################################################################################################//
-//  Finding the number of consecutive zeros in an array, which can be useful for
-//  pulse analysis and noise characterization. This function counts how many
-//  times two consecutive entries in the data array are zero, ßwhich can
-//  indicate periods of inactivity or baseline in a signal.
 int FindZeros(int n, double *data) {
   int n0 = 0;
   for (int i = 1; i < n; i++) {
     if (data[i] == 0.0)
       if (data[i - 1] == 0)
         n0++;
-    //      std::cout<<"["<<data[i]<<"/"<<(data[i]==0)<<"] ";
+    //      cout<<"["<<data[i]<<"/"<<(data[i]==0)<<"] ";
   }
   return n0;
 }
-// ###########################################################################################################//
 
-// //
-// ###########################################################################################################//
-// int month2int_littleendian(const char *month) {
-//   const char hash[] = {3, 12, 8, 2, 1, 11, 7, 5, 0, 10, 4, 9, 6};
-//   return hash[(*(const int32_t *)month & ~0x20202020 + 146732) % 13];
-// }
-// //
-// ###########################################################################################################//
+int month2int_littleendian(const char *month) {
+  const char hash[] = {3, 12, 8, 2, 1, 11, 7, 5, 0, 10, 4, 9, 6};
+  return hash[(*(const int32_t *)month & ~0x20202020 + 146732) % 13];
+}
 
-// ###########################################################################################################//
-// Main function to create a ROOT tree from raw data files for a given detector
-// and run number
 int MakeTreefromRawTreeProduction(
     int detNo = 0, int runNo = 1, int trigger = 0,
     string filetype =
         "") /// put trigger = ChannelNo in case of external trigger
 {
-
-  // Load the MyFunctions.C macro, which contains utility functions for data
-  // analysis
   gROOT->LoadMacro("MyFunctions.C");
 
   // There are 4 channels in the oscilloscope, numbered from 0 to 3
   if (trigger > 4) {
-    std::cout << "Wrong trigger channel : " << trigger << std::endl;
+    std::cout <<  "Wrong trigger channel : " << trigger << std::endl; 
     return -15;
   }
 
@@ -151,87 +133,62 @@ int MakeTreefromRawTreeProduction(
   snprintf(basedirname, sizeof(basedirname), "%s", BASEDIRNAME);
   snprintf(outdirname, sizeof(outdirname), "%s", OUTDIRNAME);
 
-  // ###################################################################################################################//
-  //  Determine the width of the detector number in the folder name based on the
-  //  detector number
-  int width = 3;
   if (detNo >= MINRUN && detNo <= MAXRUN) {
     char afile[500];
-    snprintf(afile, sizeof(afile), "%s/tmpfile.tmp",
-             basedirname);          // set the §mporary file name
-    FILE *ftmp = fopen(afile, "w"); // create the temporary file
+    snprintf(afile, sizeof(afile), "%s/tmpfile.tmp", basedirname); // set the §mporary file name
+    FILE *ftmp = fopen(afile, "w");                // create the temporary file
     if (ftmp == NULL) {
-      std::cout << afile << " can not be created. Probably the directory '"
-                << basedirname << "' does not exit. Exiting..." << std::endl;
+      std::cout <<  afile << " can not be created. Probably the directory '"
+           << basedirname << "' does not exit. Exiting..." << std::endl; 
       exit(-12);
     }
     fclose(ftmp);
     // cd to the raw data directory
-    snprintf(command, sizeof(command),
-             "cd %s\nls -d S%03d-%02d-*%s_%s*.root > %s 2>/dev/null",
+    snprintf(command, sizeof(command), "cd %s\nls -d S%03d-%02d-*%s_%s*.root > %s 2>/dev/null",
              basedirname, detNo, runNo, filetype.c_str(), rtype, afile);
 
     int tst = system(command);
-    //    std::cout<<command<<endl<<"returned: "<<tst<<endl;
+    //    cout<<command<<endl<<"returned: "<<tst<<std::endl; 
     if (tst != 0) {
-      std::cout << command << std::endl << "returned: " << tst << std::endl;
-      std::cout << "Probably the tree of the run " << runNo
-                << " of detector No S" << detNo
-                << " was not found in directory " << basedirname << std::endl
-                << "Exiting..." << std::endl;
+      std::cout <<  command << std::endl << "returned: " << tst << std::endl; 
+      std::cout <<  "Probably the tree of the run " << runNo << " of detector No S"
+           << detNo << " was not found in directory " << basedirname << std::endl
+           << "Exiting..." << std::endl; 
       return tst;
     }
     ftmp = fopen(afile, "r");
     if (fgets(fnametmp, 200, ftmp) == NULL) {
-      std::cout << "Failed to read the filename for detector S" << detNo
-                << " run " << runNo << " at " << basedirname << std::endl
-                << "Exiting..." << std::endl;
+      std::cout <<  "Failed to read the filename for detector S" << detNo << " run "
+           << runNo << " at " << basedirname << std::endl
+           << "Exiting..." << std::endl; 
       return -2;
     }
 
-    //  Write the data to the log file
+    // Write the data to the log file
     int rtmp, dtmp;
     char ftypetmp[500];
     strcpy(ftypetmp, "");
     int stst = sscanf(fnametmp, "S%03d-%02d-%d-%d_%30[^ /,\n\t]", &dtmp, &rtmp,
                       &vm, &vd, ftypetmp);
-
-    //--------------------------------------------------------------------------//
-    // For the format SXXX-YY-Vm-Vd-bthick-dgap-filetype use:
-    //       int stst =
-    //       sscanf(fnametmp,"S%03d-%d-%d-%3f-%3f%30s",&rtmp,&vm,&vd,&bthick,&dgap,ftypetmp);
-    //--------------------------------------------------------------------------//
-    // std::cout << "___________________________________________________\n"
-    //           << std::endl;
-    std::cout << "Arguments read = " << stst << std::endl;
+    std::cout <<  "arguments read = " << stst << std::endl; 
     filetype.assign(ftypetmp);
-    std::cout << "Detector = " << dtmp << " (S" << std::setfill('0')
-              << std::setw(width) << detNo << ")" << std::endl;
-    std::cout << "Run = " << rtmp << std::endl;
-    std::cout << "Vm (Mesh) = " << vm << " V" << std::endl;
-    std::cout << "Vd (Drift) = " << vd << " V" << std::endl;
-
-    //--------------------------------------------------------------------------//
-    // In case the folder name contains the mylar thickness and drift gap
-    // information, it can be extracted as follows:
-    //       std::cout<<"Mylar thickness = "<<bthick<<std::endl
-    //       std::cout<<"Drift gap = "<<dgap<<std::endl;
-    //--------------------------------------------------------------------------//
-
+    std::cout <<  "detector = " << dtmp << " (S" << detNo << ")" << std::endl; 
+    std::cout <<  "run = " << rtmp << std::endl; 
+    std::cout <<  "Vm = " << vm << std::endl; 
+    std::cout <<  "Vd = " << vd << std::endl; 
+    //     cout<<"Mylar thickness = "<<bthick<<std::endl; 
+    //     cout<<"Drift gap = "<<dgap<<std::endl; 
     if (stst > 4)
-      std::cout << "filetype = " << filetype << std::endl;
+      std::cout <<  "filetype = " << filetype << std::endl; 
     fclose(ftmp);
     snprintf(command, sizeof(command), "rm %s\n", afile);
     tst = system(command);
   } else {
-    std::cout << "Available detectors: " << MINRUN << " - " << MAXRUN
-              << std::endl;
+    std::cout <<  "Available detectors: " << MINRUN << " - " << MAXRUN << std::endl; 
     return (-2);
   } // end of "detNo >= MINRUN && detNo <= MAXRUN"
-  // ###################################################################################################################//
 
-  // ###################################################################################################################//
-  // Create the output root file
+  // Output file
   const char *ftype = filetype.c_str(); /// add here any directory supplement
   char ofname[1000];
   strcpy(ofname, fnametmp);
@@ -242,10 +199,8 @@ int MakeTreefromRawTreeProduction(
 #ifdef DEBUG
   strcpy(pch, "_DEBUGtree.root");
 #endif
-  std::cout << "output filename = " << ofname << std::endl;
-  // ###################################################################################################################//
+  std::cout <<  "output filename = " << ofname << std::endl; 
 
-  // ###################################################################################################################//
   // Create some char arrays for histogram titles
   char mesh[1000];
   snprintf(mesh, sizeof(mesh), "%d", vm);
@@ -256,25 +211,21 @@ int MakeTreefromRawTreeProduction(
 
   const int MaxFiles = MAX_N_FILES;
   const int MAXSEG = 100000; // for time stamp
-  // const int FRAMESIZE = 500000;
-  // const int FRAMESIZE = 15000000;
+  const int FRAMESIZE = 500000;
 
-  // double *ptime; // pulse time
-  // ptime = new double[FRAMESIZE];
-  std::vector<double> ptime; // pulse time
-  ptime.reserve(FRAMESIZE);
+  double *ptime;
+  ptime = new double[FRAMESIZE];
 
-  std::cout << "********************\n\n\n Now starting processing " << fnametmp
-            << "..." << std::endl
-            << std::endl;
+  std::cout <<  "********************\n\n\n Now starting processing " << fnametmp
+       << "..." << std::endl
+       << std::endl; 
 
   replaceEOL(fnametmp);
   snprintf(ifilename, sizeof(ifilename), "%s/%s", basedirname, fnametmp);
   TFile *infile = new TFile(ifilename);
   if (!infile->IsOpen()) {
-    std::cout << "Failed to open \"" << ifilename
-              << "\"\ncorresponding to the run " << detNo << "\nExiting..."
-              << std::endl;
+    std::cout <<  "Failed to open \"" << ifilename << "\"\ncorresponding to the run "
+         << detNo << "\nExiting..." << std::endl; 
     return (-1);
   }
 
@@ -353,25 +304,22 @@ int MakeTreefromRawTreeProduction(
     active[i] = 1;
     branch->SetAddress(&spoints[i]);
     bname = "amplC" + channel;
-    std::cout << bname << std::endl; // print the channel name
+    std::cout <<  bname << std::endl;  // print the channel number
     btype = bname + "[npoints" + channel + "]/D";
     branch = intree->GetBranch(bname);
     amplC[i] = new double[FRAMESIZE];
     branch->SetAddress(&amplC[i][0]);
   }
 
-  // ################################################################################//
-  // Set the cache size and load the tree baskets
-  intree->SetCacheSize(200000000);
-  long int bufsize = intree->GetCacheSize();
-  // std::cout << "Cache size = " << bufsize << endl;
-  //   intree->InitializeBranchLists(true);
-  intree->SetBasketSize("*", 32000);
-  intree->AddBranchToCache("*");
-  intree->LoadBaskets();
-  bufsize = intree->GetCacheSize();
-  // std::cout << "Cache size = " << bufsize << endl;
-  // ################################################################################//
+  //   intree->SetCacheSize(200000000);
+  //   long int bufsize = intree->GetCacheSize();
+  //   cout<<"Cache size = "<<bufsize<<std::endl; 
+  // //   intree->InitializeBranchLists(true);
+  //   intree->SetBasketSize("*",32000);
+  //   intree->AddBranchToCache("*");
+  //   intree->LoadBaskets();
+  //   bufsize = intree->GetCacheSize();
+  //   cout<<"Cache size = "<<bufsize<<std::endl; 
 
   // Number of events in the input tree
   const int nevents = intree->GetEntries();
@@ -381,55 +329,38 @@ int MakeTreefromRawTreeProduction(
   double bslmax = 1.;
   double bslmin = -1.;
   const int ndivy = 8; // number of division along y, max 8, min 2
+
+  // std::std::cout <<  "Number of Events: " << nevents << " WTF going on here 1 ???"
+  //           << std::std::endl; 
   for (int i = 0; i < 4; i++) {
     double max = 0.;
     double min = 0.;
+
     // if the channel is active and there is no external trigger
     if ((active[i]) && (trigger != i + 1)) {
+      // std::std::cout <<  i << ": Active:" << active[i] << " Trigger:" << trigger
+      //           << " WTF going on here 2 ???" << std::std::endl; 
       actch = i;
-
-      // ################################################################################//
-      // //  Before the crash line, add:
-      // std::cout << "DEBUG: nevents = " << nevents << std::endl;
-      // std::cout << "DEBUG: Getting entry " << nevents / 2 << std::endl;
-      // std::cout << "DEBUG: intree pointer = " << intree << std::endl;
-      // std::cout << "DEBUG: intree->IsOpen() = " << infile->IsOpen()
-      //           << std::endl;
-      // std::cout << "DEBUG: intree->GetEntries() = " << intree->GetEntries()
-      //           << std::endl;
-      // ################################################################################//
-
       intree->GetEntry(nevents / 2);
-
-      // // Replace the crash line with:
-      // std::cout << "Attempting to read entry " << nevents / 2 << "..."
-      //           << std::endl;
-      // try {
-      //   intree->GetEntry(nevents / 2);
-      //   std::cout << "Successfully read entry " << nevents / 2 << std::endl;
-      // } catch (const std::exception &e) {
-      //   std::cout << "Exception caught: " << e.what() << std::endl;
-      // } catch (...) {
-      //   std::cout << "Unknown exception caught!" << std::endl;
-      // }
-
-      // ################################################################################//
-
+      // std::std::cout <<  i << ": Active:" << active[i] << " Trigger:" << trigger
+      //           << " WTF going on here 3 ???" << std::std::endl; 
       framesize = spoints[i];
-      std::cout << "\n\nFramesize = " << framesize << " points" << std::endl;
-      std::cout << "Gain = " << gain[i] << " V" << std::endl;
-      std::cout << "Offset = " << offset[i] << " V" << std::endl;
-      std::cout << "Range Max = " << rmax[i] * mV << " mV";
-      std::cout << "\t\tRange Min = " << rmin[i] * mV << "\t";
+      // std::std::cout <<  i << ": Active:" << active[i] << " Trigger:" << trigger
+      //           << " WTF going on here 4 ???" << std::std::endl; 
+      std::cout <<  "\n\nFramesize = " << framesize << " points" << std::endl; 
+      std::cout <<  "Gain = " << gain[i] << " V" << std::endl; 
+      std::cout <<  "Offset = " << offset[i] << " V" << std::endl; 
+      std::cout <<  "Range Max = " << rmax[i] * mV << " mV";
+      std::cout <<  "\t\tRange Min = " << rmin[i] * mV << "\t";
       range[i] = rmax[i] - rmin[i];
-      std::cout << "Full range = " << range[i] * mV << " mV  -->  "
-                << range[i] / ndivy * mV << " mV / div  --> "
-                << range[i] / 256 * mV << " mV / bit" << std::endl
-                << std::endl;
+      std::cout <<  "Full range = " << range[i] * mV << " mV  -->  "
+           << range[i] / ndivy * mV << " mV / div  --> " << range[i] / 256 * mV
+           << " mV / bit" << std::endl
+           << std::endl; 
       bslmax = rmax[i];
       // bslmin = rmin[i] + range[i] * (6. / 8.);
       bslmin = rmin[i] + range[i] * ((8 - ndivy) / 8.); // set the min baseline
-      //       std::cout<<"Corresponding to "<<endl<<endl<<endl;
+      //       cout<<"Corresponding to "<<endl<<endl<<std::endl; 
       break; /// only the first active channel is used!!!!!!
     }
   }
@@ -437,23 +368,20 @@ int MakeTreefromRawTreeProduction(
   // Time step in ns
   dt = idt * 1e9;
   if (actch < 0) {
-    std::cout
-        << "No active channel found, or the only active channel is declared "
-           "as external trigger !!! Exiting..."
-        << std::endl;
+    std::cout <<  "No active channel found, or the only active channel is declared "
+            "as external trigger !!! Exiting..."
+         << std::endl; 
     return -12;
   }
 
   long double meanoffset = (rmax[actch] + rmin[actch]) / 2.;
-  std::cout << "Mean offset = " << meanoffset * mV << " mV" << std::endl
-            << std::endl;
+  std::cout <<  "Mean offset = " << meanoffset * mV << " mV" << std::endl << std::endl; 
   long double vpb = range[actch] / 256.;
   //   drft=651;
   char dirname[1000];
   int runb = 0;
 
-  snprintf(dirname, sizeof(dirname), "%s/S%03d-%02d-%d-%d", basedirname, detNo,
-           runNo, vm, vd);
+  snprintf(dirname, sizeof(dirname), "%s/S%03d-%02d-%d-%d", basedirname, detNo, runNo, vm, vd);
 
   if (runb)
     snprintf(dirname, sizeof(dirname), "%sb", dirname);
@@ -461,9 +389,7 @@ int MakeTreefromRawTreeProduction(
   if (strlen(ftype) > 1)
     snprintf(dirname, sizeof(dirname), "%s-%s", dirname, ftype);
 
-  std::cout << "\n\n\nSearching for files at directory: " << dirname
-            << std::endl
-            << std::endl;
+  std::cout <<  "\n\n\nSearching for files at directory: " << dirname << std::endl << std::endl; 
 
   char rfname[200];
   char detid[20];
@@ -532,7 +458,7 @@ int MakeTreefromRawTreeProduction(
                       range[actch] / 8.);
   hbsl0all->GetXaxis()->SetTitle("[V]");
 
-  double *amplCo = NULL;
+  double *amplCo;
   for (int i = 0; i < 2; i++)
     amplCo = new double[FRAMESIZE];
 
@@ -581,7 +507,7 @@ int MakeTreefromRawTreeProduction(
   outtree->Branch("bslSum", &bslsum, "bslSum/D");
   outtree->Branch("rmsSum", &rmssum, "rmsSum/D");
 
-  std::cout << "\n\n Tree is ready!" << std::endl;
+  std::cout <<  "\n\n Tree is ready!" << std::endl; 
 
 #ifdef DEBUG
   //    TCanvas *cbsl = new TCanvas("baseline"+rtypes,"baseline
@@ -622,28 +548,28 @@ int MakeTreefromRawTreeProduction(
   int eventF = nevents;
   // #ifdef DEBUG
   //     eventS = 16438;
-  //     std::cout<<"Give event No to debug: ";
+  //     cout<<"Give event No to debug: ";
   //     cin>>eventS;
   //     eventF = eventS;
   // #endif
 
   intree->GetEntry(0);
   intree->GetEntry(nevents - 1);
-  std::cout << "Loading tree baskets in virtual memory" << std::endl;
+  std::cout <<  "Loading tree baskets in virtual memory" << std::endl; 
   int nbaskets = intree->LoadBaskets(4000000000);
-  std::cout << "Loaded " << nbaskets << " baskets " << std::endl;
+  std::cout <<  "Loaded " << nbaskets << " baskets " << std::endl; 
 
   double tdt = -1.;
   for (int nEv = eventS; nEv < nevents && nEv < eventF + 1; nEv += 1) {
 #ifdef DEBUG
     //     eventS = 16438;
-    std::cout << "Give event No to debug: ";
+    std::cout <<  "Give event No to debug: ";
     cin >> nEv;
     if (nEv < 0)
       return (-1);
 //     eventF = eventS;
 #endif
-    //     std::cout<<"ad sfsda fsda fsda af "<<nEv <<endl;
+    //     cout<<"ad sfsda fsda fsda af "<<nEv <<std::endl; 
     intree->GetEntry(nEv);
     odt = idt * 1e+9;
     evNo = eventNo;
@@ -662,9 +588,8 @@ int MakeTreefromRawTreeProduction(
 
     if (tdt != idt) {
       for (int k = 0; k < inpoints + 10; k++) /// time array
-        //  ptime[k] = k * idt;                   // tmpx*1e9;
-        ptime.push_back(k * idt); // tmpx*1e9;
-      dt = idt * 1e9;             // ns
+        ptime[k] = k * idt;                   // tmpx*1e9;
+      dt = idt * 1e9;                         // ns
       tdt = idt;
     }
     epoch = iepoch;
@@ -697,21 +622,19 @@ int MakeTreefromRawTreeProduction(
       sumsig += (amplCo[k] - meanoffset);
 #ifdef DEBUGMSG
       diff = (amplCo[k] - meanoffset) + diff;
-      std::cout << k << " = " << setw(15) << amplCo[k] << " --> "
-                << setprecision(10) << setw(15) << (amplCo[k] - meanoffset)
-                << " mV  --> sum = " << sumsig << "  diff = " << diff
-                << std::endl;
+      std::cout <<  k << " = " << setw(15) << amplCo[k] << " --> " << setprecision(10)
+           << setw(15) << (amplCo[k] - meanoffset)
+           << " mV  --> sum = " << sumsig << "  diff = " << diff << std::endl; 
       diff = (amplCo[k] - meanoffset);
 #endif
     }
 
 #ifdef DEBUG
 #ifdef DEBUGMSG
-    std::cout << "Sumsig = " << sumsig << " --> " << sumsig / 502
-              << "   gain = " << gain[actch]
-              << " --> gain/2 = " << gain[actch] / 2. << std::endl;
-    std::cout << " V/bit = " << vpb << " --> V/bit/2 = " << vpb / 2.
-              << std::endl;
+    std::cout <<  "Sumsig = " << sumsig << " --> " << sumsig / 502
+         << "   gain = " << gain[actch] << " --> gain/2 = " << gain[actch] / 2.
+         << std::endl; 
+    std::cout <<  " V/bit = " << vpb << " --> V/bit/2 = " << vpb / 2. << std::endl; 
 #endif
     cbsl->cd(1);
     TGraph *gr = new TGraph(spoints[actch], tbase, amplCo);
@@ -724,7 +647,7 @@ int MakeTreefromRawTreeProduction(
     hbsl->Draw();
     cbsl->Modified();
     cbsl->Update();
-    std::cout << "WTF?" << std::endl;
+    std::cout <<  "WTF?" << std::endl; 
 #endif
 
     /// check if histo is empty. In that case either signal completely out of
@@ -733,63 +656,56 @@ int MakeTreefromRawTreeProduction(
 
     int hentries = hbsl->Integral();
     if (hentries == 0) {
-      std::cout
-          << "_____________________________________________________________"
-          << std::endl;
-      std::cout << "Event " << evNo
-                << " has no point in the range of the baseline histo with "
-                << hbsl->GetEntries() << " entries!" << std::endl;
-      std::cout << "There are " << hbsl->GetBinContent(0) << " underflow and "
-                << hbsl->GetBinContent(nbins + 1) << " points!" << std::endl;
-      std::cout << "Sumsig for " << spoints[actch] << " is " << sumsig * mV
-                << " mV with a gain of " << vpb * mV << " mV/bit" << std::endl;
+      std::cout <<  "_____________________________________________________________"
+           << std::endl; 
+      std::cout <<  "Event " << evNo
+           << " has no point in the range of the baseline histo with "
+           << hbsl->GetEntries() << " entries!" << std::endl; 
+      std::cout <<  "There are " << hbsl->GetBinContent(0) << " underflow and "
+           << hbsl->GetBinContent(nbins + 1) << " points!" << std::endl; 
+      std::cout <<  "Sumsig for " << spoints[actch] << " is " << sumsig * mV
+           << " mV with a gain of " << vpb * mV << " mV/bit" << std::endl; 
       if (fabs(sumsig) < vpb / 10.) {
-        std::cout << "The event is REJECTED!!!" << std::endl;
-        std::cout
-            << "-------------------------------------------------------------"
-            << std::endl;
+        std::cout <<  "The event is REJECTED!!!" << std::endl; 
+        std::cout <<  "-------------------------------------------------------------"
+             << std::endl; 
         continue;
       } else {
         int ovfl = hbsl->GetBinContent(nbins + 1);
         int unfl = hbsl->GetBinContent(0);
         int hnp = spoints[actch] / 2;
         if (ovfl >= hnp - 1 && unfl >= hnp - 1 && fabs(ovfl - unfl) <= 1) {
-          std::cout
-              << "It seems that there might be one point within the range of "
-                 "the scope that makes the frame inegral non-zero."
-              << std::endl;
-          std::cout
-              << "However, this point is out of the bsl histo range, and the "
-                 "overrange / underange points are shared equally."
-              << std::endl;
-          std::cout << "The event is REJECTED!!!" << std::endl;
-          std::cout
+          std::cout <<  "It seems that there might be one point within the range of "
+                  "the scope that makes the frame inegral non-zero."
+               << std::endl; 
+          std::cout <<  "However, this point is out of the bsl histo range, and the "
+                  "overrange / underange points are shared equally."
+               << std::endl; 
+          std::cout <<  "The event is REJECTED!!!" << std::endl; 
+          cout
               << "-------------------------------------------------------------"
-              << std::endl;
+              << std::endl; 
           continue;
         } else {
-          std::cout
-              << "The event is registered, thought the bsl histo integral is "
-                 "zero!"
-              << std::endl;
-          std::cout
+          std::cout <<  "The event is registered, thought the bsl histo integral is "
+                  "zero!"
+               << std::endl; 
+          cout
               << "-------------------------------------------------------------"
-              << std::endl;
+              << std::endl; 
         }
       }
     } else if (hentries <= 20) {
-      std::cout
-          << "_____________________________________________________________"
-          << std::endl;
-      std::cout
-          << "Event " << evNo
-          << " has very few points point in the range of the baseline histo "
-             "with "
-          << hbsl->GetEntries() << " entries!" << std::endl;
-      std::cout << "There are " << hbsl->GetBinContent(0) << " underflow and "
-                << hbsl->GetBinContent(nbins + 1) << " points!" << std::endl;
-      std::cout << "Sumsig for " << spoints[actch] << " is " << sumsig * mV
-                << " mV with a gain of " << vpb * mV << " mV/bit" << std::endl;
+      std::cout <<  "_____________________________________________________________"
+           << std::endl; 
+      std::cout <<  "Event " << evNo
+           << " has very few points point in the range of the baseline histo "
+              "with "
+           << hbsl->GetEntries() << " entries!" << std::endl; 
+      std::cout <<  "There are " << hbsl->GetBinContent(0) << " underflow and "
+           << hbsl->GetBinContent(nbins + 1) << " points!" << std::endl; 
+      std::cout <<  "Sumsig for " << spoints[actch] << " is " << sumsig * mV
+           << " mV with a gain of " << vpb * mV << " mV/bit" << std::endl; 
     }
 
     t0o = t0[actch];
@@ -863,7 +779,7 @@ int MakeTreefromRawTreeProduction(
     // //       double meantt = hbsl0->GetBinLowEdge(maxbt);
     // //       double vart = hbsl0->GetBinWidth(maxbt);
     // //       double rmstt = hbsl0->GetRMS();
-    // //       // 	  std::cout<<"meant C"<<ci+1<<" = "<<meant<<endl;
+    // //       // 	  cout<<"meant C"<<ci+1<<" = "<<meant<<std::endl; 
     // //
     // //       if (rmstt<0.005) /// don't accumulate wierd events in total
     // baseline histo;
@@ -881,8 +797,7 @@ int MakeTreefromRawTreeProduction(
     // //       fbsl0->SetParLimits(2,vpb/2.,10.*vpb);
     // //
     // //       cbsl->cd(2);
-    // //       snprintf(fname2, sizeof(fname2), "bsl-corrected event %d
-    // baseline", evNo );
+    // //       snprintf(fname2, sizeof(fname2), "bsl-corrected event %d baseline", evNo );
     // //       hbsl0->SetTitle(fname2);
     // //       fitstatus2 =
     // hbsl0->Fit(fbsl0,"BQ","",meantt-0.0075,meantt+0.0075);
@@ -892,12 +807,12 @@ int MakeTreefromRawTreeProduction(
 
     if (fitstatus1 != 0) //|| fitstatus2 || 0)
     {
-      std::cout << "evNo = " << evNo << "\t  f1 = " << fitstatus1
-                << " f2 = " << fitstatus2;
-      std::cout << " bsl = " << bsl[1] << " rms = " << rms[1];
-      std::cout << " bsl0 = " << bslsum << " rms0 = " << rmssum << std::endl;
-      std::cout << " SumSig = " << sumsig
-                << " histogram Integral = " << hentries << std::endl;
+      std::cout <<  "evNo = " << evNo << "\t  f1 = " << fitstatus1
+           << " f2 = " << fitstatus2;
+      std::cout <<  " bsl = " << bsl[1] << " rms = " << rms[1];
+      std::cout <<  " bsl0 = " << bslsum << " rms0 = " << rmssum << std::endl; 
+      std::cout <<  " SumSig = " << sumsig << " histogram Integral = " << hentries
+           << std::endl; 
       // //         cbsl->Modified();
       // //         cbsl->Update();
       // 	return (fitstatus1);
@@ -957,19 +872,18 @@ int MakeTreefromRawTreeProduction(
 
     if (framesize > 20000) {
       if ((nEv + 1) % 50 == 0)
-        std::cout << "Processed " << nEv + 1 << " events (evNo = " << evNo
-                  << ") out of " << nevents << std::endl;
+        std::cout <<  "Processed " << nEv + 1 << " events (evNo = " << evNo
+             << ") out of " << nevents << std::endl; 
 
       if (nevents % 200 == 0)
         ofile->Write("", TObject::kOverwrite);
     } else {
       if ((nEv + 1) % 1000 == 0) {
-        std::cout << "Processed " << nEv + 1 << " events (evNo = " << evNo
-                  << ") out of " << nevents << std::endl;
+        std::cout <<  "Processed " << nEv + 1 << " events (evNo = " << evNo
+             << ") out of " << nevents << std::endl; 
         TTimeStamp *tstamp = new TTimeStamp();
         tstamp->Set();
-        std::cout << "\t\tprocessing time : " << tstamp->AsString("l")
-                  << std::endl;
+        std::cout <<  "\t\tprocessing time : " << tstamp->AsString("l") << std::endl; 
         // 	  if ((nEv+1) == 100)
         // 	  {
         // 	    outtree->OptimizeBaskets();
@@ -1051,10 +965,9 @@ int MakeTreefromRawTreeProduction(
 
   char tmpdir[500];
   snprintf(tmpdir, sizeof(tmpdir), "%s", gSystem->pwd());
-  std::cout << "Actual directory: " << tmpdir << std::endl;
+  std::cout <<  "Actual directory: " << tmpdir << std::endl; 
   char plotdirname[500];
-  snprintf(plotdirname, sizeof(plotdirname), "%s/S%03d/", PLOTDIR,
-           detNo); //,abs(threshold));
+  snprintf(plotdirname, sizeof(plotdirname), "%s/S%03d/", PLOTDIR, detNo); //,abs(threshold));
 
   gSystem->mkdir(plotdirname, kTRUE);
   gSystem->ChangeDirectory(plotdirname);
@@ -1063,11 +976,10 @@ int MakeTreefromRawTreeProduction(
   gSystem->ChangeDirectory("./../..");
   gSystem->ChangeDirectory(tmpdir);
 
-  std::cout << "End of file processing.\n"
-            << evNo << " events were found" << std::endl;
+  std::cout <<  "End of file processing.\n" << evNo << " events were found" << std::endl; 
   ofile->Write("", TObject::kOverwrite);
 
   return 0;
 }
-// enf of MakeTreefromRawTreeProduction
-// ###########################################################################################################//
+
+// #endif
