@@ -21,6 +21,7 @@
 #include <TString.h>
 #include <TStyle.h>
 #include <TTimeStamp.h>
+#include <ostream>
 #include <sstream>
 
 // #include <iomanip>
@@ -57,11 +58,11 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
   char particle[20];
   if (bkg == 1)
-    sprintf(particle, "bkg");
+    snprintf(particle, sizeof(particle), "bkg");
   else if (nRun == 1)
-    sprintf(particle, "neutron");
+    snprintf(particle, sizeof(particle), "neutron");
   else
-    sprintf(particle, "gamma");
+    snprintf(particle, sizeof(particle), "gamma");
 
   int vm = 500;
   int vd = 750;
@@ -96,10 +97,10 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   char ftypetmp[500];
   char fnametmp[500];
 
-  sprintf(basedirname, "%s", OUTDIRNAME);
+  snprintf(basedirname, sizeof(basedirname), "%s", OUTDIRNAME);
   // // //
   if (detNo > MINRUN && detNo <= MAXRUN) {
-    sprintf(afile, "%s/tmpfile.tmp", basedirname);
+    snprintf(afile, sizeof(afile), "%s/tmpfile.tmp", basedirname);
     FILE *ftmp = fopen(afile, "w");
     if (ftmp == NULL) {
       cout << afile << " can not be created. Probablly the directory '"
@@ -107,8 +108,8 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
       exit(-12);
     }
     fclose(ftmp);
-    sprintf(
-        command,
+    snprintf(
+        command, sizeof(command),
         "cd %s\nls -d S%03d-%02d-*%s*_PRODUCTION_tree.root > %s 2>/dev/null",
         basedirname, detNo, runNo, filetype.c_str(), afile);
     int tst = system(command);
@@ -142,7 +143,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     if (stst > 4)
       cout << "run type = " << filetype << endl;
     fclose(ftmp);
-    sprintf(command, "rm %s\n", afile);
+    snprintf(command, sizeof(command), "rm %s\n", afile);
     tst = system(command);
   } else {
     cout << "Available detectors: " << MINRUN << " - " << MAXRUN << endl;
@@ -160,16 +161,16 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   strcpy(ftype, cftype);
   char *pch;
   pch = strstr(ftype, "_PRODUCTION_tree.root");
-  //   sprintf(ofname,"%s_tree.root",pch);
+  //   snprintf(ofname, sizeof(ofname), "%s_tree.root", pch);
   *pch = '\0';
   cout << "fyletype = " << ftype << endl;
 
   char rtype[1000];
   strcpy(rtype, RTYPE);
   char mesh[1000];
-  sprintf(mesh, "%d", vm);
+  snprintf(mesh, sizeof(mesh), "%d", vm);
   char drift[1000];
-  sprintf(drift, "%d", vd);
+  snprintf(drift, sizeof(drift), "%d", vd);
 
   int drft;
   sscanf(drift, "%d", &drft);
@@ -188,15 +189,17 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   cout << "********************\n\n\n Starting now...\n\n" << endl;
 
   int position = strlen(basedirname);
-  sprintf(dirname, "%s/S%03d-%02d-%d-%d", basedirname, detNo, runNo, vm, vd);
-  //   sprintf(anadirname,"%s/anaTrees/S%03d-%d-%d-%3.1f-%3.1f",basedirname,detNo,vm,vd,bthick,dgap);
-  sprintf(anadirname, "%s/S%03d-%02d-%d-%d", OUTDIRNAME, detNo, runNo, vm, vd);
+  snprintf(dirname, sizeof(dirname), "%s/S%03d-%02d-%d-%d", basedirname, detNo,
+           runNo, vm, vd);
+  //   snprintf(anadirname,"%s/anaTrees/S%03d-%d-%d-%3.1f-%3.1f",basedirname,detNo,vm,vd,bthick,dgap);
+  snprintf(anadirname, sizeof(anadirname), "%s/S%03d-%02d-%d-%d", OUTDIRNAME,
+           detNo, runNo, vm, vd);
 
   if (runb)
-    sprintf(dirname, "%sb", dirname);
+    snprintf(dirname, sizeof(dirname), "%sb", dirname);
 
   if (strlen(ftype) > 1)
-    sprintf(dirname, "%s-%s", dirname, ftype);
+    snprintf(dirname, sizeof(dirname), "%s-%s", dirname, ftype);
 
   cout << "\n\n\nWorking directory: " << dirname << endl << endl;
 
@@ -210,14 +213,14 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   double dt = 4.;       // 4 ns
 
   char detid[20];
-  sprintf(detid, "S%03d", detNo);
+  snprintf(detid, sizeof(detid), "S%03d", detNo);
   char runid[20];
-  sprintf(runid, "%02d", runNo);
+  snprintf(runid, sizeof(runid), "%02d", runNo);
 
   char cthreshold[20];
-  sprintf(cthreshold, "%.1fmV", fabs(threshold * 1000.));
+  snprintf(cthreshold, sizeof(cthreshold), "%.1fmV", fabs(threshold * 1000.));
   char cnthreshold[20];
-  sprintf(cnthreshold, "%.1fmV", fabs(nTh * 1000.));
+  snprintf(cnthreshold, sizeof(cnthreshold), "%.1fmV", fabs(nTh * 1000.));
 
   TString rtypes(detid);
   rtypes += "_";
@@ -251,13 +254,15 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   // ctypes+=ftype;
 
   /// open root tree file
-  //  sprintf(fname,"%s%s-Vm%s-Vd%s.root",dirname,rtype,mesh,drift);
-  sprintf(fname, "%s_%s_tree.root", dirname, rtype);
+  //  snprintf(fname, sizeof(fname), "%s%s-Vm%s-Vd%s.root", dirname, rtype,
+  //  mesh, drift);
+  snprintf(fname, sizeof(fname), "%s_%s_tree.root", dirname, rtype);
 
   cout << "Input filename: " << fname << endl;
 
-  sprintf(ofname, "%s_%s_%s_treeParam_aTh%.1fmV_nTh%.1fmV.root", anadirname,
-          rtype, particle, fabs(threshold * 1000.), fabs(nTh * 1000.));
+  snprintf(ofname, sizeof(ofname),
+           "%s_%s_%s_treeParam_aTh%.1fmV_nTh%.1fmV.root", anadirname, rtype,
+           particle, fabs(threshold * 1000.), fabs(nTh * 1000.));
   cout << "Output filename: " << ofname << endl;
 
   TFile *ifile = new TFile(fname);
@@ -268,8 +273,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
          << " Does not exist!!!" << endl;
     return (-3);
   }
-  // const int ARRAYSIZE = 10000000;
-    const int ARRAYSIZE = MAXVECSIZE;
+  const int ARRAYSIZE = MAXVECSIZE;
   const int MAXTRIG = 100000;
   IPARAM *ipar, *ipars[2], *spar;
   for (int i = 0; i < 2; i++)
@@ -320,8 +324,8 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   TBranch *branch;
   int nfiles[4] = {0, 0, 0, 0};
 
-  sprintf(treename, "RawDataTree");
-  sprintf(treetitle, "Raw data tree");
+  snprintf(treename, sizeof(treename), "RawDataTree");
+  snprintf(treetitle, sizeof(treetitle), "Raw data tree");
   tree = (TTree *)ifile->Get(treename);
 
   branch = tree->GetBranch("eventNo");
@@ -370,17 +374,19 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   double bsl = 0.;
 
   char tmpdir[500];
-  sprintf(tmpdir, "%s", gSystem->pwd());
+  snprintf(tmpdir, sizeof(tmpdir), "%s", gSystem->pwd());
   cout << "Actual directory: " << tmpdir << endl;
 
   char plotdirname[500];
-  sprintf(plotdirname, "%s/S%03d/", PLOTDIR, detNo); //,abs(threshold));
+  snprintf(plotdirname, sizeof(plotdirname), "%s/S%03d/", PLOTDIR,
+           detNo); //,abs(threshold));
   gSystem->mkdir(plotdirname, kTRUE);
   gSystem->ChangeDirectory(plotdirname);
   gSystem->ChangeDirectory(tmpdir);
 
   char allplotdirname[500];
-  sprintf(allplotdirname, "%s/moreplots/", plotdirname); //,abs(threshold));
+  snprintf(allplotdirname, sizeof(allplotdirname), "%s/moreplots/",
+           plotdirname); //,abs(threshold));
 
   gSystem->mkdir(allplotdirname, kTRUE);
   gSystem->ChangeDirectory(allplotdirname);
@@ -430,8 +436,8 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   else
     ofile = new TFile(ofname, "RECREATE");
 
-  sprintf(treename, "ParameterTree");
-  sprintf(treetitle, "Pulse Parameter tree");
+  snprintf(treename, sizeof(treename), "ParameterTree");
+  snprintf(treetitle, sizeof(treetitle), "Pulse Parameter tree");
 
   TTree *otree = new TTree(treename, treetitle);
 
@@ -638,19 +644,21 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   /// the following plots concern the neutron rates (per pulse)
 
   // Nneutrons per pulse if > 0, as found by peak detection
-  sprintf(hname, "S%03d_run%02d_Rate_%s", detNo, runNo,
-          ftype); /// THis is used only when long pulse????
+  snprintf(hname, sizeof(hname), "S%03d_run%02d_Rate_%s", detNo, runNo,
+           ftype); /// THis is used only when long pulse????
   if (exttrig)
-    sprintf(htitle, "Neutron rate per pulse");
+    snprintf(htitle, sizeof(htitle), "Neutron rate per pulse");
   else
-    sprintf(htitle, "Neutron rate");
+    snprintf(htitle, sizeof(htitle), "Neutron rate");
   hRate = new TH1D(hname, htitle, rbins, 0., rmax);
   // Nneutrons per pulse as found by rate evolution plot!!!
-  sprintf(htitle, "Rate (neutrons per %gs) from evolution plot", period);
-  sprintf(hname, "S%03d_run%02d_Rate_Neutrons_per%3.1fseconds_%s", detNo, runNo,
-          period, ftype);
+  snprintf(htitle, sizeof(htitle),
+           "Rate (neutrons per %gs) from evolution plot", period);
+  snprintf(hname, sizeof(hname),
+           "S%03d_run%02d_Rate_Neutrons_per%3.1fseconds_%s", detNo, runNo,
+           period, ftype);
   hNeutronsRate = new TH1D(hname, htitle, rbins, 0., rmax);
-  sprintf(axtitle, "neutrons / %gsec", period);
+  snprintf(axtitle, sizeof(axtitle), "neutrons / %gsec", period);
   hNeutronsRate->GetXaxis()->SetTitle(axtitle);
 
   ///________________________________________________________________
@@ -659,8 +667,9 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   /// timebinwidth)
 
   // all particle average rate per pulse . Must exclude spark & recovery events
-  sprintf(hname, "S%03d_run%02d_RateEvolutionAll_%s", detNo, runNo, ftype);
-  sprintf(htitle, "All particles");
+  snprintf(hname, sizeof(hname), "S%03d_run%02d_RateEvolutionAll_%s", detNo,
+           runNo, ftype);
+  snprintf(htitle, sizeof(htitle), "All particles");
   hRateEvolution = new TH1D(hname, htitle, tbins, epochS, epochF);
   hRateEvolution->GetYaxis()->SetTitle("#LT events #GT / sec");
   hRateEvolution->GetXaxis()->SetTimeDisplay(1);
@@ -669,8 +678,9 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
   // neutron average rate per pulse . Exclude spark events && correlated (pulse
   // uncorrelated) neutrons
-  sprintf(hname, "S%03d_run%02d_RateEvolutionNeutrons_%s", detNo, runNo, ftype);
-  sprintf(htitle, "Rate evolution (Neutrons)");
+  snprintf(hname, sizeof(hname), "S%03d_run%02d_RateEvolutionNeutrons_%s",
+           detNo, runNo, ftype);
+  snprintf(htitle, sizeof(htitle), "Rate evolution (Neutrons)");
   hNeutronsRateEvolution = new TH1D(hname, htitle, tbins, epochS, epochF);
   hNeutronsRateEvolution->GetYaxis()->SetTitle("#LT events #GT / sec");
   hNeutronsRateEvolution->GetYaxis()->SetLabelSize(0.03);
@@ -687,57 +697,64 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   cout << "Time bin = " << timebinwidth << endl;
 
   // correlated (pulse uncorrelated) neutrons average rate per pulse
-  sprintf(hname, "S%03d_run%02d_RateEvolutionBackgroundNeutrons_%s", detNo,
-          runNo, ftype);
-  sprintf(htitle, "Uncorrelated neutrons");
+  snprintf(hname, sizeof(hname),
+           "S%03d_run%02d_RateEvolutionBackgroundNeutrons_%s", detNo, runNo,
+           ftype);
+  snprintf(htitle, sizeof(htitle), "Uncorrelated neutrons");
   hBkgNeutronsRateEvolution = new TH1D(hname, htitle, tbins, epochS, epochF);
 
   // sparks or baseline recovery events. Useful for rate calculations also
-  sprintf(hname, "S%03d_run%02d_Spark_Evolution_%s", detNo, runNo, ftype);
-  sprintf(htitle, "Sparks or recovery");
+  snprintf(hname, sizeof(hname), "S%03d_run%02d_Spark_Evolution_%s", detNo,
+           runNo, ftype);
+  snprintf(htitle, sizeof(htitle), "Sparks or recovery");
   hSparkEvolution = new TH1D(hname, htitle, tbins, epochS, epochF);
 
   // auxiliary plot for the normalization of the rate per pulse.
-  sprintf(hname, "S%03d_run%02d_Rate_Evolution_Check_%s", detNo, runNo, ftype);
-  sprintf(htitle, "Rate normalization plot");
+  snprintf(hname, sizeof(hname), "S%03d_run%02d_Rate_Evolution_Check_%s", detNo,
+           runNo, ftype);
+  snprintf(htitle, sizeof(htitle), "Rate normalization plot");
   hRateEvolutionCheck = new TH1D(hname, htitle, tbins, epochS, epochF);
 
   ///________________________________________________________________
   /// the following plots concern the rate structures WITHOUT correction for the
   /// beam trigger
 
-  sprintf(hname, "S%03d_run%02d_Neutron_RateStructure_Th%gmV_%s", detNo, runNo,
-          nTh * mV, ftype);
-  sprintf(htitle, "Neutrons");
+  snprintf(hname, sizeof(hname),
+           "S%03d_run%02d_Neutron_RateStructure_Th%gmV_%s", detNo, runNo,
+           nTh * mV, ftype);
+  snprintf(htitle, sizeof(htitle), "Neutrons");
   hNeutronsRateStructure = new TH1D(hname, htitle, 250, 0., framesize);
   hNeutronsRateStructure->GetXaxis()->SetTitle("t [#mus]");
   //     hNeutronsRateStructure->SetMinimum(0);
 
-  sprintf(hname, "S%03d_run%02d_RateStructure_%s", detNo, runNo, ftype);
-  sprintf(htitle, "All events");
+  snprintf(hname, sizeof(hname), "S%03d_run%02d_RateStructure_%s", detNo, runNo,
+           ftype);
+  snprintf(htitle, sizeof(htitle), "All events");
   hRateStructure = new TH1D(hname, htitle, 250, 0., framesize);
   hRateStructure->GetXaxis()->SetTitle("t [#mus]");
   //     hRateStructure->SetMinimum(0);
 
-  sprintf(hname, "S%03d_run%02d_TriggerStructure_%s", detNo, runNo, ftype);
-  sprintf(htitle, "Linac4 trigger ");
+  snprintf(hname, sizeof(hname), "S%03d_run%02d_TriggerStructure_%s", detNo,
+           runNo, ftype);
+  snprintf(htitle, sizeof(htitle), "Linac4 trigger ");
   hStructTrigger = new TH1D(hname, htitle, 250, 0., framesize);
   hStructTrigger->SetLineColor(kGreen + 2);
 
   ///________________________________________________________________
   ///  Rate structures after trigger subtraction
 
-  sprintf(hname, "S%03d_run%02d_Rate_Structure_Trigger_NeutronsTh%gmV_%s",
-          detNo, runNo, nTh * mV, ftype);
-  sprintf(htitle, "Neutron Rate Structure");
+  snprintf(hname, sizeof(hname),
+           "S%03d_run%02d_Rate_Structure_Trigger_NeutronsTh%gmV_%s", detNo,
+           runNo, nTh * mV, ftype);
+  snprintf(htitle, sizeof(htitle), "Neutron Rate Structure");
   hNeutronsRateStructTrigger =
       new TH1D(hname, htitle, 250, -0.25 * framesize, 0.75 * framesize);
   hNeutronsRateStructTrigger->GetXaxis()->SetTitle("t [#mus]");
   hNeutronsRateStructTrigger->SetMinimum(0);
 
-  sprintf(hname, "S%03d_run%02d_Rate_Structure_Trigger_%s", detNo, runNo,
-          ftype);
-  sprintf(htitle, "Trigger Structure");
+  snprintf(hname, sizeof(hname), "S%03d_run%02d_Rate_Structure_Trigger_%s",
+           detNo, runNo, ftype);
+  snprintf(htitle, sizeof(htitle), "Trigger Structure");
   hRateStructTrigger =
       new TH1D(hname, htitle, 250, -0.25 * framesize, 0.75 * framesize);
   hRateStructTrigger->GetXaxis()->SetTitle("t [#mus]");
@@ -746,35 +763,38 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   ///________________________________________________________________
   ///  DeltaT plots
 
-  sprintf(hname, "S%03d_run%02d_consecutivePulses_#DeltaT_%s", detNo, runNo,
-          ftype);
-  sprintf(htitle, "Concecutive pulses #DeltaT");
+  snprintf(hname, sizeof(hname), "S%03d_run%02d_consecutivePulses_#DeltaT_%s",
+           detNo, runNo, ftype);
+  snprintf(htitle, sizeof(htitle), "Concecutive pulses #DeltaT");
   hDt = new TH1D(hname, htitle, dtbins, 0., tmax);
   hDt->GetXaxis()->SetTitle("#DeltaT [sec]");
 
-  sprintf(hname, "S%03d_run%02d_consecutivePulses_#DeltaT_NeutronsTh%gmV_%s",
-          detNo, runNo, nTh * mV, ftype);
-  sprintf(htitle, "#DeltaT neutrons");
+  snprintf(hname, sizeof(hname),
+           "S%03d_run%02d_consecutivePulses_#DeltaT_NeutronsTh%gmV_%s", detNo,
+           runNo, nTh * mV, ftype);
+  snprintf(htitle, sizeof(htitle), "#DeltaT neutrons");
   hNeutronsDt = new TH1D(hname, htitle, dtbins, 0., tmax);
   hNeutronsDt->GetXaxis()->SetTitle("#DeltaT [sec]");
 
   ///________________________________________________________________
   ///  Amplitude plots
 
-  sprintf(hname, "S%03d_run%02d_Amplitude_%s", detNo, runNo, ftype);
-  sprintf(htitle, "All particles");
+  snprintf(hname, sizeof(hname), "S%03d_run%02d_Amplitude_%s", detNo, runNo,
+           ftype);
+  snprintf(htitle, sizeof(htitle), "All particles");
   hAMPL = new TH1D(hname, htitle, nbins * 1, 0., amplMax * mV);
   hAMPL->GetXaxis()->SetTitle("Pulse amplitude [mV]");
 
-  sprintf(htitle, "Pulse amplitude (neutron cut)");
-  sprintf(hname, "S%03d_run%02d_Amplitude_NeutronsTh%gmV_%s", detNo, runNo,
-          nTh * mV, ftype);
+  snprintf(htitle, sizeof(htitle), "Pulse amplitude (neutron cut)");
+  snprintf(hname, sizeof(hname), "S%03d_run%02d_Amplitude_NeutronsTh%gmV_%s",
+           detNo, runNo, nTh * mV, ftype);
   hNeutronsAMPL = new TH1D(hname, htitle, nbins * 1, 0., amplMax * mV);
   hNeutronsAMPL->GetXaxis()->SetTitle("Pulse amplitude [mV]");
 
-  sprintf(htitle, "Pulse amplitude evolution (neutron cut)");
-  sprintf(hname, "S%03d_run%02d_AmplitudeEvolution_NeutronsTh%gmV_%s", detNo,
-          runNo, nTh * mV, ftype);
+  snprintf(htitle, sizeof(htitle), "Pulse amplitude evolution (neutron cut)");
+  snprintf(hname, sizeof(hname),
+           "S%03d_run%02d_AmplitudeEvolution_NeutronsTh%gmV_%s", detNo, runNo,
+           nTh * mV, ftype);
   TH2D *h2dNeutronsAMPL =
       new TH2D(hname, htitle, 100, epochS, epochF, nbins / 2, 0., amplMax * mV);
   h2dNeutronsAMPL->GetXaxis()->SetTimeDisplay(1);
@@ -786,30 +806,33 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   ///________________________________________________________________
   ///  Charge plots
 
-  sprintf(hname, "S%03d_run%02d_Charge_%s", detNo, runNo, ftype);
-  sprintf(htitle, "All particles");
+  snprintf(hname, sizeof(hname), "S%03d_run%02d_Charge_%s", detNo, runNo,
+           ftype);
+  snprintf(htitle, sizeof(htitle), "All particles");
   hCH = new TH1D(hname, htitle, nbins * 1, 0., chMax);
   hCH->GetXaxis()->SetTitle("charge [a.u.]");
 
-  sprintf(htitle, "Pulse charge (neutron cut)");
-  sprintf(hname, "S%03d_run%02d_Charge_NeutronsTh%gmV_%s", detNo, runNo,
-          nTh * mV, ftype);
+  snprintf(htitle, sizeof(htitle), "Pulse charge (neutron cut)");
+  snprintf(hname, sizeof(hname), "S%03d_run%02d_Charge_NeutronsTh%gmV_%s",
+           detNo, runNo, nTh * mV, ftype);
   hNeutronsCH = new TH1D(hname, htitle, nbins * 1, 0., chMax);
   hNeutronsCH->GetXaxis()->SetTitle("charge [a.u.]");
 
-  //     sprintf(hname,"S%03d_run%02d_Net_Charge_%s",detNo,runNo,ftype);
-  //     hnCH=new TH1D(hname,htitle,nbins*2,0.,chMax);
+  //     snprintf(hname, sizeof(hname), "S%03d_run%02d_Net_Charge_%s", detNo,
+  //     runNo, ftype); hnCH=new TH1D(hname,htitle,nbins*2,0.,chMax);
   //     hnCH->GetXaxis()->SetTitle("charge [a.u.]");
   //     hnCH->SetLineColor(4);
 
-  sprintf(fname2, "S%03d_run%02d_Single_Pulse_Charge_%s", detNo, runNo, ftype);
+  snprintf(fname2, sizeof(fname2), "S%03d_run%02d_Single_Pulse_Charge_%s",
+           detNo, runNo, ftype);
   hsCH = new TH1D(fname2, fname2, nbins * 1, 0., chMax);
   hsCH->GetXaxis()->SetTitle("charge [a.u.]");
   hsCH->SetLineColor(2);
 
-  sprintf(htitle, "Pulse charge evolution (neutron cut)");
-  sprintf(hname, "S%03d_run%02d_ChargeEvolution_NeutronsTh%gmV_%s", detNo,
-          runNo, nTh * mV, ftype);
+  snprintf(htitle, sizeof(htitle), "Pulse charge evolution (neutron cut)");
+  snprintf(hname, sizeof(hname),
+           "S%03d_run%02d_ChargeEvolution_NeutronsTh%gmV_%s", detNo, runNo,
+           nTh * mV, ftype);
   TH2D *h2dNeutronsCH =
       new TH2D(hname, htitle, 100, epochS, epochF, nbins / 2, 0., chMax);
   h2dNeutronsCH->GetXaxis()->SetTimeDisplay(1);
@@ -821,18 +844,20 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   ///________________________________________________________________
   ///  pulse time properties plots
 
-  sprintf(htitle, "Rise Time , n_{th} = %g mV", nTh * 1000);
-  sprintf(fname2, "S%03d_run%02d_Risetime_%s", detNo, runNo, ftype);
+  snprintf(htitle, sizeof(htitle), "Rise Time , n_{th} = %g mV", nTh * 1000);
+  snprintf(fname2, sizeof(fname2), "S%03d_run%02d_Risetime_%s", detNo, runNo,
+           ftype);
   hRT = new TH1D(fname2, htitle, int(rtMax / dt), 0., rtMax);
   hRT->GetXaxis()->SetTitle("Risetime [ns]");
 
-  sprintf(htitle, "Pulse Width , n_{th} = %g mV", nTh * 1000);
-  sprintf(fname2, "S%03d_run%02d_Pulse_Width_%s", detNo, runNo, ftype);
+  snprintf(htitle, sizeof(htitle), "Pulse Width , n_{th} = %g mV", nTh * 1000);
+  snprintf(fname2, sizeof(fname2), "S%03d_run%02d_Pulse_Width_%s", detNo, runNo,
+           ftype);
   hPW = new TH1D(fname2, htitle, int(pwMax / dt), 0., pwMax);
   hPW->GetXaxis()->SetTitle("Pulse Duration [ns]");
 
-  sprintf(htitle, "TOT , n_{th} = %g mV", nTh * 1000);
-  sprintf(fname2, "S%03d_run%02d_TOT_%s", detNo, runNo, ftype);
+  snprintf(htitle, sizeof(htitle), "TOT , n_{th} = %g mV", nTh * 1000);
+  snprintf(fname2, sizeof(fname2), "S%03d_run%02d_TOT_%s", detNo, runNo, ftype);
   hTOT = new TH1D(fname2, htitle, int(totMax / dt), 0., totMax);
   hTOT->GetXaxis()->SetTitle("TOT [ns]");
 
@@ -842,31 +867,35 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   if (dv <= 50 || vm > 490)
     chovamax = 800.;
 
-  sprintf(htitle, "Charge over Amplitude");
-  sprintf(hname, "S%03d_run%02d_Charge_ov_Amplitude_%s", detNo, runNo, ftype);
+  snprintf(htitle, sizeof(htitle), "Charge over Amplitude");
+  snprintf(hname, sizeof(hname), "S%03d_run%02d_Charge_ov_Amplitude_%s", detNo,
+           runNo, ftype);
   TH1D *hCHovAmpl = new TH1D(hname, htitle, nbins * 2, 0., chovamax);
   hCHovAmpl->GetXaxis()->SetTitle("ratio [nC/V]");
 
-  sprintf(htitle, "Pulse Charge over Amplitude");
-  sprintf(hname, "S%03d_run%02d_spCharge_ov_Amplitude_%s", detNo, runNo, ftype);
+  snprintf(htitle, sizeof(htitle), "Pulse Charge over Amplitude");
+  snprintf(hname, sizeof(hname), "S%03d_run%02d_spCharge_ov_Amplitude_%s",
+           detNo, runNo, ftype);
   TH1D *hsCHovAmpl = new TH1D(hname, htitle, nbins * 2, 0., chovamax);
   hsCHovAmpl->SetLineColor(kRed);
   hsCHovAmpl->GetXaxis()->SetTitle("ratio [nC/V]");
 
-  sprintf(fname2, "S%03d_run%02d_Ampl_vs_Rise_Time_C_%s", detNo, runNo, ftype);
+  snprintf(fname2, sizeof(fname2), "S%03d_run%02d_Ampl_vs_Rise_Time_C_%s",
+           detNo, runNo, ftype);
   hAmplvsRT = new TH2D(fname2, fname2, nbins, 0., amplMax, 25, 0., rtMax);
   hAmplvsRT->GetXaxis()->SetTitle("Pulse amplitude [V]");
   hAmplvsRT->GetYaxis()->SetTitle("Risetime [#mus]");
   hAmplvsRT->SetStats(0);
 
-  sprintf(fname2, "S%03d_run%02d_Charge_vs_Amplitude_C_%s", detNo, runNo,
-          ftype);
+  snprintf(fname2, sizeof(fname2), "S%03d_run%02d_Charge_vs_Amplitude_C_%s",
+           detNo, runNo, ftype);
   hCHvsAMPL = new TH2D(fname2, fname2, nbins, 0., amplMax, nbins, 0., chMax);
   hCHvsAMPL->GetXaxis()->SetTitle("Pulse amplitude [V]");
   hCHvsAMPL->GetYaxis()->SetTitle("Charge [a.u.]");
   hCHvsAMPL->SetStats(0);
 
-  sprintf(fname2, "S%03d_run%02d_Amplitude_vs_TOT_C_%s", detNo, runNo, ftype);
+  snprintf(fname2, sizeof(fname2), "S%03d_run%02d_Amplitude_vs_TOT_C_%s", detNo,
+           runNo, ftype);
   hAmplvsTOT = new TH2D(fname2, fname2, nbins, 0., amplMax, int(totMax / dt),
                         0., totMax);
   hAmplvsTOT->GetXaxis()->SetTitle("Pulse amplitude [V]");
@@ -876,21 +905,22 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   //----------------------------------------------
   //---------doubling histos for nThreshold--------
 
-  sprintf(fname2, "S%03d_run%02d_Risetime_NeutronsTh%gmV_%s", detNo, runNo,
-          nTh * mV, ftype);
-  sprintf(htitle, "Rise Time (n_{th} = %g mV)", nTh * 1000);
+  snprintf(fname2, sizeof(fname2), "S%03d_run%02d_Risetime_NeutronsTh%gmV_%s",
+           detNo, runNo, nTh * mV, ftype);
+  snprintf(htitle, sizeof(htitle), "Rise Time (n_{th} = %g mV)", nTh * 1000);
   hNeutronsRT = new TH1D(fname2, htitle, int(rtMax / dt), 0., rtMax);
   hNeutronsRT->GetXaxis()->SetTitle("Risetime [ns]");
 
-  sprintf(fname2, "S%03d_run%02d_Pulse_Width_NeutronsTh%gmV_%s", detNo, runNo,
-          nTh * mV, ftype);
-  sprintf(htitle, "Pulse Width (n_{th} = %g mV)", nTh * 1000);
+  snprintf(fname2, sizeof(fname2),
+           "S%03d_run%02d_Pulse_Width_NeutronsTh%gmV_%s", detNo, runNo,
+           nTh * mV, ftype);
+  snprintf(htitle, sizeof(htitle), "Pulse Width (n_{th} = %g mV)", nTh * 1000);
   hNeutronsPW = new TH1D(fname2, htitle, int(pwMax / dt), 0., pwMax);
   hNeutronsPW->GetXaxis()->SetTitle("Pulse Duration [ns]");
 
-  sprintf(fname2, "S%03d_run%02d_TOT_NeutronsTh%gmV_%s", detNo, runNo, nTh * mV,
-          ftype);
-  sprintf(htitle, "TOT  (n_{th} = %g mV)", nTh * 1000);
+  snprintf(fname2, sizeof(fname2), "S%03d_run%02d_TOT_NeutronsTh%gmV_%s", detNo,
+           runNo, nTh * mV, ftype);
+  snprintf(htitle, sizeof(htitle), "TOT  (n_{th} = %g mV)", nTh * 1000);
   hNeutronsTOT = new TH1D(fname2, htitle, int(totMax / dt), 0., totMax);
   hNeutronsTOT->GetXaxis()->SetTitle("TOT [ns]");
 
@@ -915,6 +945,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
   cout << "Start processing the " << nevents << " events" << endl;
   while (eventNo < nevents) {
+
     if (draw) {
       cout << endl
            << "________________________________________________________________"
@@ -994,7 +1025,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
         waveform = new TGraph(maxpoints, ptime, amplC);
         maxc[ci] = TMath::MaxElement(maxpoints, amplC);
         minc[ci] = TMath::MinElement(maxpoints, amplC);
-        sprintf(cname, "Event %d Waveform C%d\n", evNo, ci + 1);
+        snprintf(cname, sizeof(cname), "Event %d Waveform C%d\n", evNo, ci + 1);
         waveform->SetTitle(cname);
         waveform->SetLineColor(clr[ci]);
         waveform->SetMarkerColor(clr[ci]);
@@ -1049,7 +1080,8 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
         }
         // Create stringstream to format the text Altingun
         std::stringstream ss, ss_2;
-        ss << "Peak: [" << setprecision(3) << maxY * 1000. << " mV, "<< x_at_max<<" ns]";
+        ss << "Peak: [" << setprecision(3) << maxY * 1000. << " mV, "
+           << x_at_max << " ns]";
         // ss_2 << "t[Peak]: " << setprecision(3) << x_at_max << " ns";
 
         // Create TLatex to draw the text on the canvas Altingun
@@ -1109,7 +1141,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
         derivative->SetMarkerColor(clr[ci]);
         derivative->SetLineColor(clr[ci]);
         derivative->SetFillColor(0);
-        sprintf(cname, "Derivative C%d\n", ci + 1);
+        snprintf(cname, sizeof(cname), "Derivative C%d\n", ci + 1);
         derivative->SetTitle(cname);
         if (ci == 0) {
           derivative->Draw("apl");
@@ -1126,7 +1158,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
         graph22->SetLineColor(clr[ci + 4]);
         graph22->SetLineWidth(2);
         graph22->SetFillColor(0);
-        sprintf(cname, "Smoothed Derivative C%d\n", ci + 1);
+        snprintf(cname, sizeof(cname), "Smoothed Derivative C%d\n", ci + 1);
         graph22->SetTitle(cname);
         graph22->Draw("pl");
         dcanv->Modified();
@@ -1143,7 +1175,8 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
         integralh->SetMarkerColor(clr[ci + 4]);
         integralh->SetLineColor(clr[ci + 4]);
         integralh->SetFillColor(0);
-        sprintf(cname, "Integral %g of C%d\n", nint * dt, ci + 1);
+        snprintf(cname, sizeof(cname), "Integral %g of C%d\n", nint * dt,
+                 ci + 1);
         integralh->SetTitle(cname);
         if (ci == 0) {
           integralh->Draw("apl");
@@ -1160,7 +1193,8 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
         graph22->SetMarkerColor(clr[ci + 8]);
         graph22->SetLineColor(clr[ci + 8]);
         graph22->SetFillColor(0);
-        sprintf(cname, "Integral %g of C%d\n", nint * dt, ci + 1);
+        snprintf(cname, sizeof(cname), "Integral %g of C%d\n", nint * dt,
+                 ci + 1);
         graph22->SetTitle(cname);
         graph22->Draw("pl");
 
@@ -1170,7 +1204,8 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
         graph22->SetMarkerColor(clr[ci + 12]);
         graph22->SetLineColor(clr[ci + 12]);
         graph22->SetFillColor(0);
-        sprintf(cname, "Integral %g of C%d\n", nint * dt, ci + 1);
+        snprintf(cname, sizeof(cname), "Integral %g of C%d\n", nint * dt,
+                 ci + 1);
         graph22->SetTitle(cname);
         graph22->Draw("pl");
         ecanv->Modified();
@@ -1322,15 +1357,21 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
     ntrigsTot += npeaks;
     ntrigsTotNeutrons += npeaksNeutrons;
-    // cout << "npeaks" << npeaks << endl;
+    // std::cout << "exttrig: " << exttrig << " ntrigs: " << ntrigs
+    //           << "  npeaks = " << npeaks
+    //           << "  npeaksNeutrons = " << npeaksNeutrons << std::endl;
 
-    if (!exttrig)
+    if (!exttrig) {
       if (ntrigs == 0) {
+        // std::cout << "exttrig: " << exttrig << " ntrigs: " << ntrigs
+        //           << "  npeaks = " << npeaks
+        //           << "  npeaksNeutrons = " << npeaksNeutrons << std::endl;
         hRateEvolutionCheck->Fill(
             evtime); /// this is for the case of external trigger !!!
         eventNo++;
         continue;
       }
+    }
 
     double ts = ptime[0];             // ns
     double tf = ptime[maxpoints - 1]; // ns
@@ -1340,11 +1381,9 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     ///       double tnow = epoch + nn*1e-9 + spar[npeaks-1].t10*1e-9;  /// time
     ///       of last peak in event or of the unique event if short frame//sec
 
-    long double depoch = 1. * (long double)epoch;
-    long double tnowneutrons =
-        depoch + nn * 1e-9 +
-        spar[ntrigsNeutrons - 1].t10 *
-            1e-9; /// used for dt calculation for neutrons
+    // Definition of tnow for the case of neutron peaks, it is used for the
+    // calculation
+    long double tnowneutrons = 0, depoch = 0;
 
     hRateEvolution->Fill(evtime, npeaks);
     hRateEvolutionCheck->Fill(evtime);
@@ -1372,6 +1411,11 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
       tlast = tnow;
 
       if (eventNo > 0 && npeaksNeutrons > 0) {
+
+        depoch = 1. * (long double)epoch;
+        tnowneutrons = depoch + nn * 1e-9 +
+                       spar[ntrigsNeutrons - 1].t10 *
+                           1e-9; /// used for dt calculation for neutrons
         dtlastneutrons = tnowneutrons - tlastneutrons;
         // 	  if (dtlastneutrons<0)
         // 	  {
@@ -1401,7 +1445,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
       graphSum->SetLineColor(1);
       graphSum->SetFillColor(0);
       graphSum->SetLineWidth(2);
-      sprintf(cname, "Sum raw signal event %d", evNo);
+      snprintf(cname, sizeof(cname), "Sum raw signal event %d", evNo);
       graphSum->SetTitle(cname);
       graphSum->Draw("pl");
 
@@ -1409,7 +1453,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
       sgraphSum->SetLineColor(7);
       sgraphSum->SetFillColor(0);
       sgraphSum->SetLineWidth(2);
-      sprintf(cname, "Smoothed Sum signal 1 event %d", evNo);
+      snprintf(cname, sizeof(cname), "Smoothed Sum signal 1 event %d", evNo);
       sgraphSum->SetTitle(cname);
       sgraphSum->Draw("pl");
 
@@ -1419,7 +1463,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
       // 	graph22->SetMarkerColor(clr[ci]);
       // 	graph22->SetLineColor(clr[ci]);
       // 	graph22->SetFillColor(0);
-      // 	sprintf(cname,"Max subtracted C%d\n",ci+1);
+      // 	snprintf(cname, sizeof(cname), "Max subtracted C%d\n",ci+1);
       // 	graph22->SetTitle(cname);
       // 	graph22->Draw("pl");
       //       }
@@ -1431,7 +1475,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
       graph22->SetFillColor(0);
       graph22->SetLineWidth(2);
       graph22->SetLineStyle(7);
-      sprintf(cname, "Derivative\n");
+      snprintf(cname, sizeof(cname), "Derivative\n");
       graph22->SetTitle(cname);
       graph22->Draw("pl");
 
@@ -1839,8 +1883,8 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
   double rates = 1. * f1->GetParameter(1);
   char title[100];
-  sprintf(title, "f(x) = %g e^{-%g x}", f1->GetParameter(0),
-          f1->GetParameter(1));
+  snprintf(title, sizeof(title), "f(x) = %g e^{-%g x}", f1->GetParameter(0),
+           f1->GetParameter(1));
   f1->SetTitle(title);
 
   gStyle->SetOptFit(111);
@@ -1897,8 +1941,8 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
   //   rcanv->Update();
   rcanv->cd(5);
-  sprintf(
-      txt2,
+  snprintf(
+      txt2, sizeof(txt2),
       " #it{detector} #color[4]{#bf{S%03d}}  \t  #it{run} #color[4]{#bf{%02d}}",
       detNo, runNo);
   TLatex *tex = new TLatex(0.02, 0.95, txt2);
@@ -1908,23 +1952,25 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   tex->SetTextAlign(12);
   tex->Draw();
 
-  sprintf(txt2,
-          " V_{m} = #color[4]{-%d}V, V_{d} = #color[4]{-%d}V, peak = "
-          "#color[4]{%g}mV, n = #color[4]{%g}mV",
-          vm, vd, fabs(threshold * 1000.), fabs(nTh * 1000.));
-  sprintf(txt2,
-          " V_{m} = #bf{-%d V}, V_{d} = #bf{-%d V}, peak = #bf{%g mV}, n = "
-          "#bf{%g mV}",
-          vm, vd, fabs(threshold * 1000.), fabs(nTh * 1000.));
-  sprintf(txt2, " V_{m} = #bf{-%d V},  V_{d} = #bf{-%d V}", vm, vd);
+  snprintf(txt2, sizeof(txt2),
+           " V_{m} = #color[4]{-%d}V, V_{d} = #color[4]{-%d}V, peak = "
+           "#color[4]{%g}mV, n = #color[4]{%g}mV",
+           vm, vd, fabs(threshold * 1000.), fabs(nTh * 1000.));
+  snprintf(txt2, sizeof(txt2),
+           " V_{m} = #bf{-%d V}, V_{d} = #bf{-%d V}, peak = #bf{%g mV}, n = "
+           "#bf{%g mV}",
+           vm, vd, fabs(threshold * 1000.), fabs(nTh * 1000.));
+  snprintf(txt2, sizeof(txt2), " V_{m} = #bf{-%d V},  V_{d} = #bf{-%d V}", vm,
+           vd);
   tex = new TLatex(0.5, 0.88, txt2);
   tex->SetTextFont(132);
   tex->SetTextSize(0.05);
   tex->SetLineWidth(2);
   tex->SetTextAlign(23);
   tex->Draw();
-  sprintf(txt2, " #it{Thresholds:}  peak = #bf{%g mV},  n = #bf{%g mV}",
-          fabs(threshold * 1000.), fabs(nTh * 1000.));
+  snprintf(txt2, sizeof(txt2),
+           " #it{Thresholds:}  peak = #bf{%g mV},  n = #bf{%g mV}",
+           fabs(threshold * 1000.), fabs(nTh * 1000.));
   tex = new TLatex(0.5, 0.80, txt2);
   tex->SetTextFont(132);
   tex->SetTextSize(0.05);
@@ -1937,13 +1983,14 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     calcr = frate->GetParameter(1);
     calcrerr = frate->GetParameter(2);
   }
-  sprintf(txt2,
-          "#LTr_{n}#GT = #bf{%3.2f #pm %3.3f} #frac{n}{#it{%gs}} = #bf{%3.2f "
-          "#pm %3.3f} s^{-1}",
-          calcr, calcrerr, timebinwidth, calcr / timebinwidth,
-          calcrerr / timebinwidth);
+  snprintf(txt2, sizeof(txt2),
+           "#LTr_{n}#GT = #bf{%3.2f #pm %3.3f} #frac{n}{#it{%gs}} = #bf{%3.2f "
+           "#pm %3.3f} s^{-1}",
+           calcr, calcrerr, timebinwidth, calcr / timebinwidth,
+           calcrerr / timebinwidth);
   //  if (fgaus)
-  //    sprintf(txt2,"#LTr_{n(#it{#Deltat=%gs})}#GT = #bf{%3.2f #pm %3.3f}
+  //    snprintf(txt2, sizeof(txt2),"#LTr_{n(#it{#Deltat=%gs})}#GT = #bf{%3.2f
+  //    #pm %3.3f}
   //    #frac{n}{pulse}",timebinwidth,frate->GetParameter(1),frate->GetParameter(2));
   tex = new TLatex(0.5, 0.7, txt2);
   tex->SetTextFont(132);
@@ -1952,7 +1999,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   tex->SetTextAlign(23);
   tex->Draw();
 
-  sprintf(txt2, "#DeltaT fit, all particles:");
+  snprintf(txt2, sizeof(txt2), "#DeltaT fit, all particles:");
   tex = new TLatex(0.5, 0.6, txt2);
   tex->SetTextFont(132);
   tex->SetTextSize(0.05);
@@ -1960,14 +2007,14 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   tex->SetTextAlign(23);
   tex->Draw();
 
-  sprintf(txt2,
-          "#LTr_{all events}#GT = #bf{%3.2f #pm %3.2f} #frac{counts}{sec}",
-          f1->GetParameter(1), f1->GetParError(1));
+  snprintf(txt2, sizeof(txt2),
+           "#LTr_{all events}#GT = #bf{%3.2f #pm %3.2f} #frac{counts}{sec}",
+           f1->GetParameter(1), f1->GetParError(1));
   if (exprate < 1)
-    sprintf(txt2,
-            "#LTr_{all events}#GT = #(){#bf{%3.1f #pm %3.2f}}#times10^{-3} "
-            "#frac{counts}{sec}",
-            f1->GetParameter(1) * 1e3, f1->GetParError(1) * 1e3);
+    snprintf(txt2, sizeof(txt2),
+             "#LTr_{all events}#GT = #(){#bf{%3.1f #pm %3.2f}}#times10^{-3} "
+             "#frac{counts}{sec}",
+             f1->GetParameter(1) * 1e3, f1->GetParError(1) * 1e3);
   tex = new TLatex(0.5, 0.55, txt2);
   tex->SetTextFont(132);
   tex->SetTextSize(0.05);
@@ -1977,16 +2024,16 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   runpar->grate = f1->GetParameter(1);
   runpar->sgrate = f1->GetParError(1);
 
-  sprintf(
-      txt2,
+  snprintf(
+      txt2, sizeof(txt2),
       "#LTr_{n(#it{thr=%gmV})}#GT = #bf{%3.2f #pm %3.2f} #frac{counts}{sec}",
       nTh * mV, f12->GetParameter(1), f12->GetParError(1));
   if (exprate < 1)
-    sprintf(txt2,
-            "#LTr_{n(#it{thr=%gmV})}#GT = #(){#bf{%3.1f #pm "
-            "%3.1f}}#times10^{-3} #frac{counts}{sec}",
-            nTh * mV, f12->GetParameter(1) * 1000.,
-            f12->GetParError(1) * 1000.);
+    snprintf(txt2, sizeof(txt2),
+             "#LTr_{n(#it{thr=%gmV})}#GT = #(){#bf{%3.1f #pm "
+             "%3.1f}}#times10^{-3} #frac{counts}{sec}",
+             nTh * mV, f12->GetParameter(1) * 1000.,
+             f12->GetParError(1) * 1000.);
   tex = new TLatex(0.5, 0.46, txt2);
   tex->SetTextFont(132);
   tex->SetTextSize(0.05);
@@ -1997,14 +2044,17 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   runpar->srate = f12->GetParError(1);
 
   long double duration = (epochF - epochS) / 3600.;
-  sprintf(txt2, "#it{#bf{%d sparks} were observed within #bf{%3.1LF} hours}",
-          totNsparks, duration);
+  snprintf(txt2, sizeof(txt2),
+           "#it{#bf{%d sparks} were observed within #bf{%3.1LF} hours}",
+           totNsparks, duration);
   if (totNsparks == 0)
-    sprintf(txt2, "#it{#bf{No spark} was observed within #bf{%3.1LF} hours}",
-            duration);
+    snprintf(txt2, sizeof(txt2),
+             "#it{#bf{No spark} was observed within #bf{%3.1LF} hours}",
+             duration);
   else if (totNsparks == 1)
-    sprintf(txt2, "#it{#bf{%d spark} was observed within #bf{%3.1LF} hours}",
-            totNsparks, duration);
+    snprintf(txt2, sizeof(txt2),
+             "#it{#bf{%d spark} was observed within #bf{%3.1LF} hours}",
+             totNsparks, duration);
 
   tex = new TLatex(0.5, 0.335, txt2);
   tex->SetTextFont(132);
@@ -2013,7 +2063,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   tex->SetTextAlign(23);
   tex->Draw();
 
-  sprintf(txt2, "#it{Landau fits}");
+  snprintf(txt2, sizeof(txt2), "#it{Landau fits}");
   tex = new TLatex(0.5, 0.25, txt2);
   tex->SetTextFont(132);
   tex->SetTextSize(0.05);
@@ -2021,10 +2071,11 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   tex->SetTextAlign(23);
   tex->Draw();
 
-  sprintf(txt2, "#it{Ampl}: %s = #bf{%3.1f #pm %3.2f} mV , %s = #bf{%5.3e} ",
-          flandAmpl->GetParName(1), flandAmpl->GetParameter(1) * 1000. / mV,
-          flandAmpl->GetParError(1) * 1000. / mV, flandAmpl->GetParName(2),
-          flandAmpl->GetParameter(2));
+  snprintf(txt2, sizeof(txt2),
+           "#it{Ampl}: %s = #bf{%3.1f #pm %3.2f} mV , %s = #bf{%5.3e} ",
+           flandAmpl->GetParName(1), flandAmpl->GetParameter(1) * 1000. / mV,
+           flandAmpl->GetParError(1) * 1000. / mV, flandAmpl->GetParName(2),
+           flandAmpl->GetParameter(2));
   tex = new TLatex(0.5, 0.18, txt2);
   tex->SetTextFont(132);
   tex->SetTextSize(0.05);
@@ -2034,10 +2085,11 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   runpar->ampl = flandAmpl->GetParameter(1);
   runpar->sampl = flandAmpl->GetParameter(2);
 
-  sprintf(txt2, "#it{Charge}: %s = #bf{%3.1f #pm %3.2f} , %s = #bf{%5.3e} ",
-          flandCh->GetParName(1), flandCh->GetParameter(1),
-          flandCh->GetParError(1), flandCh->GetParName(2),
-          flandCh->GetParameter(2));
+  snprintf(txt2, sizeof(txt2),
+           "#it{Charge}: %s = #bf{%3.1f #pm %3.2f} , %s = #bf{%5.3e} ",
+           flandCh->GetParName(1), flandCh->GetParameter(1),
+           flandCh->GetParError(1), flandCh->GetParName(2),
+           flandCh->GetParameter(2));
   tex = new TLatex(0.5, 0.1, txt2);
   tex->SetTextFont(132);
   tex->SetTextSize(0.05);
@@ -2207,12 +2259,12 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   /// /////////////// output in one ps file /////////////////////
   /// _______________________________________________________ ///
 
-  //   sprintf(psname,"%s/Summary%s.ps",plotdirname,ctypes.Data());
+  //   snprintf(psname,"%s/Summary%s.ps",plotdirname,ctypes.Data());
   //   TPostScript *psfile = new TPostScript(psname,4121);
   //   psfile->NewPage();
 
   char stst[1000];
-  sprintf(stst, "/%s Summary plots\n", ctypes.Data());
+  snprintf(stst, sizeof(stst), "/%s Summary plots\n", ctypes.Data());
   //   psfile->PrintRaw();
 
   TCanvas *pcanv =
@@ -2258,8 +2310,8 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   //   pcanv->Update();
   pcanv->cd(1);
 
-  sprintf(
-      txt2,
+  snprintf(
+      txt2, sizeof(txt2),
       " #it{detector} #color[4]{#bf{S%03d}}  \t  #it{run} #color[4]{#bf{%02d}}",
       detNo, runNo);
   tex = new TLatex(0.02, 0.95, txt2);
@@ -2269,33 +2321,37 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   tex->SetTextAlign(12);
   tex->Draw();
 
-  //   sprintf(txt2," V_{m} = #color[4]{-%d}V, V_{d} = #color[4]{-%d}V, peak =
-  //   #color[4]{%g}mV, n =
+  //   snprintf(txt2, sizeof(txt2)," V_{m} = #color[4]{-%d}V, V_{d} =
+  //   #color[4]{-%d}V, peak = #color[4]{%g}mV, n =
   //   #color[4]{%g}mV",vm,vd,fabs(threshold*1000.),fabs(nTh*1000.));
-  //   sprintf(txt2," V_{m} = #bf{-%d V}, V_{d} = #bf{-%d V}, peak = #bf{%g mV},
-  //   n = #bf{%g mV}",vm,vd,fabs(threshold*1000.),fabs(nTh*1000.));
-  sprintf(txt2, " V_{m} = #bf{-%d V},  V_{d} = #bf{-%d V}", vm, vd);
+  //   snprintf(txt2, sizeof(txt2)," V_{m} = #bf{-%d V}, V_{d} = #bf{-%d V},
+  //   peak = #bf{%g mV}, n = #bf{%g
+  //   mV}",vm,vd,fabs(threshold*1000.),fabs(nTh*1000.));
+  snprintf(txt2, sizeof(txt2), " V_{m} = #bf{-%d V},  V_{d} = #bf{-%d V}", vm,
+           vd);
   tex = new TLatex(0.5, 0.88, txt2);
   tex->SetTextFont(132);
   tex->SetTextSize(0.05);
   tex->SetLineWidth(2);
   tex->SetTextAlign(23);
   tex->Draw();
-  sprintf(txt2, " #it{Thresholds:}  peak = #bf{%g mV},  n = #bf{%g mV}",
-          fabs(threshold * 1000.), fabs(nTh * 1000.));
+  snprintf(txt2, sizeof(txt2),
+           " #it{Thresholds:}  peak = #bf{%g mV},  n = #bf{%g mV}",
+           fabs(threshold * 1000.), fabs(nTh * 1000.));
   tex = new TLatex(0.5, 0.80, txt2);
   tex->SetTextFont(132);
   tex->SetTextSize(0.05);
   tex->SetLineWidth(2);
   tex->SetTextAlign(23);
   tex->Draw();
-  sprintf(txt2,
-          "#LTr_{n}#GT = #bf{%3.2f #pm %3.3f} #frac{n}{#it{%gs}} = #bf{%3.2f "
-          "#pm %3.3f} s^{-1}",
-          calcr, calcrerr, timebinwidth, calcr / timebinwidth,
-          calcrerr / timebinwidth);
+  snprintf(txt2, sizeof(txt2),
+           "#LTr_{n}#GT = #bf{%3.2f #pm %3.3f} #frac{n}{#it{%gs}} = #bf{%3.2f "
+           "#pm %3.3f} s^{-1}",
+           calcr, calcrerr, timebinwidth, calcr / timebinwidth,
+           calcrerr / timebinwidth);
   //  if (fgaus)
-  //    sprintf(txt2,"#LTr_{n(#it{#Deltat=%gs})}#GT = #bf{%3.2f #pm %3.3f}
+  //    snprintf(txt2, sizeof(txt2),"#LTr_{n(#it{#Deltat=%gs})}#GT = #bf{%3.2f
+  //    #pm %3.3f}
   //    #frac{n}{pulse}",timebinwidth,frate->GetParameter(1),frate->GetParameter(2));
   tex = new TLatex(0.5, 0.7, txt2);
   tex->SetTextFont(132);
@@ -2304,7 +2360,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   tex->SetTextAlign(23);
   tex->Draw();
 
-  sprintf(txt2, "#DeltaT fit, all particles:");
+  snprintf(txt2, sizeof(txt2), "#DeltaT fit, all particles:");
   tex = new TLatex(0.5, 0.6, txt2);
   tex->SetTextFont(132);
   tex->SetTextSize(0.05);
@@ -2312,14 +2368,14 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   tex->SetTextAlign(23);
   tex->Draw();
 
-  sprintf(txt2,
-          "#LTr_{all events}#GT = #bf{%3.2f #pm %3.2f} #frac{counts}{sec}",
-          f1->GetParameter(1), f1->GetParError(1));
+  snprintf(txt2, sizeof(txt2),
+           "#LTr_{all events}#GT = #bf{%3.2f #pm %3.2f} #frac{counts}{sec}",
+           f1->GetParameter(1), f1->GetParError(1));
   if (exprate < 1)
-    sprintf(txt2,
-            "#LTr_{all events}#GT = #(){#bf{%3.1f #pm %3.2f}}#times10^{-3} "
-            "#frac{counts}{sec}",
-            f1->GetParameter(1) * 1e3, f1->GetParError(1) * 1e3);
+    snprintf(txt2, sizeof(txt2),
+             "#LTr_{all events}#GT = #(){#bf{%3.1f #pm %3.2f}}#times10^{-3} "
+             "#frac{counts}{sec}",
+             f1->GetParameter(1) * 1e3, f1->GetParError(1) * 1e3);
   tex = new TLatex(0.5, 0.55, txt2);
   tex->SetTextFont(132);
   tex->SetTextSize(0.05);
@@ -2327,16 +2383,16 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   tex->SetTextAlign(23);
   tex->Draw();
 
-  sprintf(
-      txt2,
+  snprintf(
+      txt2, sizeof(txt2),
       "#LTr_{n(#it{thr=%gmV})}#GT = #bf{%3.2f #pm %3.2f} #frac{counts}{sec}",
       nTh * mV, f12->GetParameter(1), f12->GetParError(1));
   if (exprate < 1)
-    sprintf(txt2,
-            "#LTr_{n(#it{thr=%gmV})}#GT = #(){#bf{%3.1f #pm "
-            "%3.1f}}#times10^{-3} #frac{counts}{sec}",
-            nTh * mV, f12->GetParameter(1) * 1000.,
-            f12->GetParError(1) * 1000.);
+    snprintf(txt2, sizeof(txt2),
+             "#LTr_{n(#it{thr=%gmV})}#GT = #(){#bf{%3.1f #pm "
+             "%3.1f}}#times10^{-3} #frac{counts}{sec}",
+             nTh * mV, f12->GetParameter(1) * 1000.,
+             f12->GetParError(1) * 1000.);
   tex = new TLatex(0.5, 0.46, txt2);
   tex->SetTextFont(132);
   tex->SetTextSize(0.05);
@@ -2344,14 +2400,17 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   tex->SetTextAlign(23);
   tex->Draw();
 
-  sprintf(txt2, "#it{#bf{%d sparks} were observed within #bf{%3.1LF} hours}",
-          totNsparks, duration);
+  snprintf(txt2, sizeof(txt2),
+           "#it{#bf{%d sparks} were observed within #bf{%3.1LF} hours}",
+           totNsparks, duration);
   if (totNsparks == 0)
-    sprintf(txt2, "#it{#bf{No spark} was observed within #bf{%3.1LF} hours}",
-            duration);
+    snprintf(txt2, sizeof(txt2),
+             "#it{#bf{No spark} was observed within #bf{%3.1LF} hours}",
+             duration);
   else if (totNsparks == 1)
-    sprintf(txt2, "#it{#bf{%d spark} was observed within #bf{%3.1LF} hours}",
-            totNsparks, duration);
+    snprintf(txt2, sizeof(txt2),
+             "#it{#bf{%d spark} was observed within #bf{%3.1LF} hours}",
+             totNsparks, duration);
 
   tex = new TLatex(0.5, 0.335, txt2);
   tex->SetTextFont(132);
@@ -2363,7 +2422,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   tex->SetTextAlign(23);
   tex->Draw();
 
-  sprintf(txt2, "#it{Landau fits}");
+  snprintf(txt2, sizeof(txt2), "#it{Landau fits}");
   tex = new TLatex(0.5, 0.25, txt2);
   tex->SetTextFont(132);
   tex->SetTextSize(0.05);
@@ -2371,10 +2430,11 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   tex->SetTextAlign(23);
   tex->Draw();
 
-  sprintf(txt2, "#it{Ampl}: %s = #bf{%3.1f #pm %3.2f} mV , %s = #bf{%5.3e} ",
-          flandAmpl->GetParName(1), flandAmpl->GetParameter(1) * 1000. / mV,
-          flandAmpl->GetParError(1) * 1000. / mV, flandAmpl->GetParName(2),
-          flandAmpl->GetParameter(2));
+  snprintf(txt2, sizeof(txt2),
+           "#it{Ampl}: %s = #bf{%3.1f #pm %3.2f} mV , %s = #bf{%5.3e} ",
+           flandAmpl->GetParName(1), flandAmpl->GetParameter(1) * 1000. / mV,
+           flandAmpl->GetParError(1) * 1000. / mV, flandAmpl->GetParName(2),
+           flandAmpl->GetParameter(2));
   tex = new TLatex(0.5, 0.18, txt2);
   tex->SetTextFont(132);
   tex->SetTextSize(0.05);
@@ -2382,10 +2442,11 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   tex->SetTextAlign(23);
   tex->Draw();
 
-  sprintf(txt2, "#it{Charge}: %s = #bf{%3.1f #pm %3.2f} , %s = #bf{%5.3e} ",
-          flandCh->GetParName(1), flandCh->GetParameter(1),
-          flandCh->GetParError(1), flandCh->GetParName(2),
-          flandCh->GetParameter(2));
+  snprintf(txt2, sizeof(txt2),
+           "#it{Charge}: %s = #bf{%3.1f #pm %3.2f} , %s = #bf{%5.3e} ",
+           flandCh->GetParName(1), flandCh->GetParameter(1),
+           flandCh->GetParError(1), flandCh->GetParName(2),
+           flandCh->GetParameter(2));
   tex = new TLatex(0.5, 0.1, txt2);
   tex->SetTextFont(132);
   tex->SetTextSize(0.05);
@@ -2443,7 +2504,8 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   //  psfile->NewPage();
 
   char pname[1000];
-  sprintf(pname, "PedestalsS%03d-%02d-%d-%d-%s", detNo, runNo, vm, vd, RTYPE);
+  snprintf(pname, sizeof(pname), "PedestalsS%03d-%02d-%d-%d-%s", detNo, runNo,
+           vm, vd, RTYPE);
   TCanvas *pedcanv = (TCanvas *)ifile->Get(pname);
   pedcanv->Draw();
   pedcanv->Update();
@@ -2472,13 +2534,14 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   //  scanv->Draw();
 
   char psname[1000];
-  sprintf(psname, "Summary_%s.pdf", ctypes.Data());
+  snprintf(psname, sizeof(psname), "Summary_%s.pdf", ctypes.Data());
   char snames[1000];
-  sprintf(snames, "*S%03d_%02d*.png *S%03d-%02d*.png", detNo, runNo, detNo,
-          runNo);
+  snprintf(snames, sizeof(snames), "*S%03d_%02d*.png *S%03d-%02d*.png", detNo,
+           runNo, detNo, runNo);
 
-  sprintf(command, "cd %s\nmontage %s -tile 1x2 -geometry 1600 %s", plotdirname,
-          snames, psname);
+  snprintf(command, sizeof(command),
+           "cd %s\nmontage %s -tile 1x2 -geometry 1600 %s", plotdirname, snames,
+           psname);
   cout << "Creating Summary file:\n" << command << endl;
   int comtst = system(command);
   cout << "Done!" << endl;
