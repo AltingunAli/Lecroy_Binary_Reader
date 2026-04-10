@@ -37,6 +37,8 @@
 //
 // }
 
+namespace fs = std::filesystem;
+
 int FindZeros(int n, double *data) {
   int n0 = 0;
   for (int i = 1; i < n; i++) {
@@ -103,8 +105,8 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     snprintf(afile, sizeof(afile), "%s/tmpfile.tmp", basedirname);
     FILE *ftmp = fopen(afile, "w");
     if (ftmp == NULL) {
-      cout << afile << " can not be created. Probablly the directory '"
-           << basedirname << "' does not exit. Exiting..." << endl;
+      std::cout << afile << " can not be created. Probablly the directory '"
+                << basedirname << "' does not exit. Exiting..." << std::endl;
       exit(-12);
     }
     fclose(ftmp);
@@ -113,40 +115,50 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
         "cd %s\nls -d S%03d-%02d-*%s*_PRODUCTION_tree.root > %s 2>/dev/null",
         basedirname, detNo, runNo, filetype.c_str(), afile);
     int tst = system(command);
-    //    cout<<command<<endl<<"returned: "<<tst<<endl;
+    //    cout<<command<<endl<<"returned: "<<tst<<std::endl;
     if (tst != 0) {
-      cout << command << endl << "returned: " << tst << endl;
-      cout << "Probably the tree of run No " << detNo
-           << " was not found in directory " << basedirname << endl
-           << "Exiting..." << endl;
+      std::cerr << "\n***********************************************************"
+                   "********"
+                   "*****\n"
+                << "Command below returned " << tst << ": \n"
+                << std::endl
+                << command << std::endl;
+      std::cerr << "\nProbably tree for the detector " << detNo
+                << " and run " << runNo << " was not found in directory: \n    "
+                << basedirname << std::endl
+                << "\nRun bin2tree to create the tree first, and then run this code to analyse it. \n"
+                << "Exiting...\n***********************************************************"
+                   "********"
+                   "*****" << std::endl;
       return tst;
     }
     ftmp = fopen(afile, "r");
     if (fgets(fnametmp, 200, ftmp) == NULL) {
-      cout << "Failed to read the filename for run " << detNo << " at "
-           << basedirname << endl
-           << "Exiting..." << endl;
+      std::cout << "Failed to read the filename for run " << detNo << " at "
+                << basedirname << endl
+                << "Exiting..." << std::endl;
       return -2;
     }
     int rtmp, dtmp;
     strcpy(ftypetmp, "");
     int stst = sscanf(fnametmp, "S%03d-%02d-%d-%d%30[^ /,\n\t]", &dtmp, &rtmp,
                       &vm, &vd, ftypetmp);
-    cout << "arguments read = " << stst << endl;
+    std::cout << "arguments read = " << stst << std::endl;
     filetype.assign(ftypetmp);
-    cout << "detector = " << dtmp << " (S" << detNo << ")" << endl;
-    cout << "run = " << rtmp << endl;
-    cout << "Vm = " << vm << endl;
-    cout << "Vd = " << vd << endl;
-    cout << "Mylar thickness = " << bthick << endl;
-    cout << "Drift gap = " << dgap << endl;
+    std::cout << "detector = " << dtmp << " (S" << detNo << ")" << std::endl;
+    std::cout << "run = " << rtmp << std::endl;
+    std::cout << "Vm = " << vm << std::endl;
+    std::cout << "Vd = " << vd << std::endl;
+    std::cout << "Mylar thickness = " << bthick << std::endl;
+    std::cout << "Drift gap = " << dgap << std::endl;
     if (stst > 4)
-      cout << "run type = " << filetype << endl;
+      std::cout << "run type = " << filetype << std::endl;
     fclose(ftmp);
     snprintf(command, sizeof(command), "rm %s\n", afile);
     tst = system(command);
   } else {
-    cout << "Available detectors: " << MINRUN << " - " << MAXRUN << endl;
+    std::cout << "Available detectors: " << MINRUN << " - " << MAXRUN
+              << std::endl;
     return (-2);
   }
 
@@ -163,7 +175,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   pch = strstr(ftype, "_PRODUCTION_tree.root");
   //   snprintf(ofname, sizeof(ofname), "%s_tree.root", pch);
   *pch = '\0';
-  cout << "fyletype = " << ftype << endl;
+  std::cout << "fyletype = " << ftype << std::endl;
 
   char rtype[1000];
   strcpy(rtype, RTYPE);
@@ -186,7 +198,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   gStyle->SetOptStat(1001111);
   gStyle->SetNdivisions(507);
 
-  cout << "********************\n\n\n Starting now...\n\n" << endl;
+  std::cout << "********************\n\n\n Starting now...\n\n" << std::endl;
 
   int position = strlen(basedirname);
   snprintf(dirname, sizeof(dirname), "%s/S%03d-%02d-%d-%d", basedirname, detNo,
@@ -201,7 +213,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   if (strlen(ftype) > 1)
     snprintf(dirname, sizeof(dirname), "%s-%s", dirname, ftype);
 
-  cout << "\n\n\nWorking directory: " << dirname << endl << endl;
+  std::cout << "\n\n\nWorking directory: " << dirname << endl << std::endl;
 
   string linein, linein2;
   char cline[1000];
@@ -258,19 +270,19 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   //  mesh, drift);
   snprintf(fname, sizeof(fname), "%s_%s_tree.root", dirname, rtype);
 
-  cout << "Input filename: " << fname << endl;
+  std::cout << "Input filename: " << fname << std::endl;
 
   snprintf(ofname, sizeof(ofname),
            "%s_%s_%s_treeParam_aTh%.1fmV_nTh%.1fmV.root", anadirname, rtype,
            particle, fabs(threshold * 1000.), fabs(nTh * 1000.));
-  cout << "Output filename: " << ofname << endl;
+  std::cout << "Output filename: " << ofname << std::endl;
 
   TFile *ifile = new TFile(fname);
 
   if (!ifile->IsOpen()) {
-    cout << "Attention! File \n"
-         << fname << "\ncorresponding to the run " << runid
-         << " Does not exist!!!" << endl;
+    std::cout << "Attention! File \n"
+              << fname << "\ncorresponding to the run " << runid
+              << " Does not exist!!!" << std::endl;
     return (-3);
   }
   const int ARRAYSIZE = MAXVECSIZE;
@@ -369,13 +381,13 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   branch->SetAddress(&fitstatus2);
 
   int nevents = tree->GetEntries();
-  cout << "Found " << nevents << " events for the tree " << endl;
+  std::cout << "Found " << nevents << " events for the tree " << std::endl;
 
   double bsl = 0.;
 
   char tmpdir[500];
   snprintf(tmpdir, sizeof(tmpdir), "%s", gSystem->pwd());
-  cout << "Actual directory: " << tmpdir << endl;
+  std::cout << "Actual directory: " << tmpdir << std::endl;
 
   char plotdirname[500];
   snprintf(plotdirname, sizeof(plotdirname), "%s/S%03d/", PLOTDIR,
@@ -398,20 +410,53 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     ptime[i] = ptime[i - 1] + dt; // dt in ns--> ptime in ns...
   }
 
-  cout << " dt = " << dt << endl;
+  std::cout << " dt = " << dt << std::endl;
 
   double nThCh = fabs(172.08 * nTh);
   nThCh = fabs(200.0 * nTh);
-  cout << "Neutron thresholds:   Amplitude = " << nTh * 1000.
-       << " mV ,  Charge = " << nThCh << " nC \n"
-       << endl;
+  std::cout << "Neutron thresholds:   Amplitude = " << nTh * 1000.
+            << " mV ,  Charge = " << nThCh << " nC \n"
+            << std::endl;
+
+  // Create the Event_WaveForms directory if it does not exist
+
+  // Build the folder path once
+  std::string outDir = Form("%s/Event_WaveForms/S%03d-%02d-%d-%d", WORKDIR,
+                            detNo, runNo, vm, vd);
+
+  // // In order to create the waveforms, first the AnalyseTreeProduction should be
+  // // run with draw option 0
+  // if (draw == 0 && !fs::exists(outDir)) {
+  //   std::cerr
+  //       << "*******************************************************************"
+  //          "*****\n"
+  //       << " In order to draw the waveforms: \n"
+  //       << "  - First run AnalyseTreeProduction "
+  //          "with draw option 0 to create the root file. Exiting...\n"
+  //       << "  - Example:  root -l -b -q 'AnalyseTreeProduction.C(1, 1, 0, 0, "
+  //          "100, 100)' \n"
+  //       << "*******************************************************************"
+  //          "*****"
+  //       << std::endl;
+  //   return -1;
+  // }
+
+  // Create it if it does not exist
+  std::error_code ec;
+  if (!fs::exists(outDir)) {
+    fs::create_directories(outDir, ec);
+    if (ec) {
+      std::cerr << "Failed to create directory: " << outDir
+                << " Error: " << ec.message() << std::endl;
+    }
+  }
 
   TGraph *waveform;
   TGraph *derivative;
   TGraph *integralh;
   char cname[100];
 
-  /// follows a simple event display
+  /// Create Canvases for draw option
   TCanvas *ecanv, *dcanv, *icanv;
   if (draw) {
     ecanv = new TCanvas("EventDisplay", "Event display");
@@ -430,7 +475,10 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     col0++;
   }
 
+  // Ctreate output root file and tree
   TFile *ofile;
+
+  // if draw is on, open the file in read mode, otherwise create a new file
   if (draw)
     ofile = new TFile(ofname);
   else
@@ -539,8 +587,8 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   tree->GetEntry(nevents - 1);
   tree->GetEntry(nevents - 1);
   long double epochF = (1. * epoch + nn * 1e-9) + 0.004;
-  cout << "Epoch S = " << epochS << endl;
-  cout << "Epoch F = " << epochF << endl;
+  std::cout << "Epoch S = " << epochS << std::endl;
+  std::cout << "Epoch F = " << epochF << std::endl;
 
   double exprate = nevents / (epochF - epochS);
 
@@ -548,9 +596,9 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   if (maxpoints < 5000) {
     expdt = ((int)(1. / exprate)) / 1 +
             1; /// Normalizing to seconds for the slow detector
-    cout << "Expected average rate = " << exprate
-         << " / sec ,  average DT = " << 1. / exprate
-         << " , implemented DT = " << expdt << endl;
+    std::cout << "Expected average rate = " << exprate
+              << " / sec ,  average DT = " << 1. / exprate
+              << " , implemented DT = " << expdt << std::endl;
 
     //     return 1;
   }
@@ -573,12 +621,13 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   const double mV = 1000.; /// set mV=1. to make everything in volts!
 
   double rstep = (frmax - frmin) / 256.;
-  cout << "Rmin = " << frmin << "  , Rmax = " << frmax
-       << "  step = " << rstep * mV << " mV" << endl;
+  std::cout << "Rmin = " << frmin << "  , Rmax = " << frmax
+            << "  step = " << rstep * mV << " mV" << std::endl;
   if (fabs(threshold) < 3 * rstep) {
-    cout << "setting new threshold from " << threshold * mV << " mV   to    ";
+    std::cout << "setting new threshold from " << threshold * mV
+              << " mV   to    ";
     threshold = -floor(10000 * 3 * rstep) / 10000.;
-    cout << threshold * mV << " mV" << endl;
+    std::cout << threshold * mV << " mV" << std::endl;
   }
 
   amplMax = 256 * (rstep);
@@ -634,7 +683,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     longpulse = 0;
     rmax = (int)(5 * exprate * period);
     rbins = rmax;
-    //     cout<<"rmax = "<<rmax <<"    tmax = "<<tmax<<endl; return 1;
+    //     cout<<"rmax = "<<rmax <<"    tmax = "<<tmax<<std::endl; return 1;
   }
 
   ///  for (int i=0;i<1; i++)
@@ -694,7 +743,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   hNeutronsRateEvolution->SetMinimum(0);
 
   timebinwidth = hRateEvolution->GetBinWidth(1);
-  cout << "Time bin = " << timebinwidth << endl;
+  std::cout << "Time bin = " << timebinwidth << std::endl;
 
   // correlated (pulse uncorrelated) neutrons average rate per pulse
   snprintf(hname, sizeof(hname),
@@ -943,17 +992,18 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     eventNo = 2000; /// skip first events because of the time change in the
                     /// osciloscope.
 
-  cout << "Start processing the " << nevents << " events" << endl;
+  std::cout << "Start processing the " << nevents << " events" << std::endl;
   while (eventNo < nevents) {
 
     if (draw) {
-      cout << endl
-           << "________________________________________________________________"
-              "______"
-           << endl
-           << endl;
+      std::cout
+          << endl
+          << "________________________________________________________________"
+             "______"
+          << endl
+          << std::endl;
       ;
-      cout << "Event to draw : ";
+      std::cout << "Event to draw : ";
       cin >> eventNo;
     }
 
@@ -972,17 +1022,18 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
     double totcharge = 0.;
 
-    //       cout<<"frmax = "<<frmax<<"   "<<frmin<<"    "<<frmin - frmax<<endl;
+    //       cout<<"frmax = "<<frmax<<"   "<<frmin<<"    "<<frmin -
+    //       frmax<<std::endl;
 
-    //  cout<<"1 SDD DSF ASDF SADF ASF ASF AS"<<endl;
+    //  cout<<"1 SDD DSF ASDF SADF ASF ASF AS"<<std::endl;
     /// reset time array in case dt was modified during data taking
     int ntrigs = 0;
     int ntrigsNeutrons = 0;
-    //     cout<< "maxpoints = "<< maxpoints << endl;
+    //     cout<< "maxpoints = "<< maxpoints << std::endl;
     ptime[0] = 0;
     for (int i = 1; i < maxpoints; i++)
       ptime[i] = ptime[i - 1] + dt;
-    //       cout<<" dt = "<<dt<<endl;
+    //       cout<<" dt = "<<dt<<std::endl;
     for (int i = 0; i < maxpoints; i++) {
       totcharge += bslsum - amplSum[i];
     }
@@ -998,19 +1049,18 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     }
 
     npt = TMath::FloorNint(DT / (dt * 1e9));
-    //       cout<<"npt = "<<npt<<endl;
+    //       cout<<"npt = "<<npt<<std::endl;
     //  return 0;
 
     if (draw) {
-
       for (int i = 0; i < maxpoints; i++) {
         amplC[i] = amplSum[i];
       }
 
-      cout << "Event " << eventNo << "\t fit1 " << fitstatus1 << " fit2 "
-           << fitstatus2 << " bsl " << bslsum << " rms " << rmssum
-           << " totcharge " << totcharge << endl;
-      cout << endl << "Pulse length = " << maxpoints << endl;
+      std::cout << "Event " << eventNo << "\t fit1 " << fitstatus1 << " fit2 "
+                << fitstatus2 << " bsl " << bslsum << " rms " << rmssum
+                << " totcharge " << totcharge << std::endl;
+      std::cout << endl << "Pulse length = " << maxpoints << std::endl;
       long double epochX = (1. * epoch + nn * 1e-9);
       //	  TTimeStamp *tstamp = new
       // TTimeStamp((time_t)epoch+(rootConv-unixConv),(Int_t)nn);
@@ -1036,7 +1086,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
           waveform->GetHistogram()->SetMinimum(-fmin); // set min for better
                                                        // viewing
           // waveform->GetHistogram()->SetMinimum(fmin / 2.);
-          cout << "Setting minimum at " << frmin - frmax << endl;
+          std::cout << "Setting minimum at " << frmin - frmax << std::endl;
           waveform->Draw("apl");
           // waveform->GetHistogram()->GetYaxis()->SetRangeUser(fmin,-fmin/8.);
           // waveform->GetHistogram()->GetYaxis()->SetRangeUser(fmin / 2,
@@ -1057,7 +1107,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
         Double_t y_axis_max = waveform->GetYaxis()->GetXmax();
         Double_t y_axis_min = waveform->GetYaxis()->GetXmin();
 
-        // std::cout << "ymax-ymin:  " << y_axis_max << "  " << y_axis_min
+        // std::cout <<  "ymax-ymin:  " << y_axis_max << "  " << y_axis_min
         //           << std::endl;
 
         waveform->GetYaxis()->SetRangeUser(y_axis_min - 0.1, y_axis_max + 0.1);
@@ -1213,19 +1263,19 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
       }
     } // end (if(draw)
 
-    //       cout<<"2 SDD DSF ASDF SADF ASF ASF AS"<<endl;
+    //       cout<<"2 SDD DSF ASDF SADF ASF ASF AS"<<std::endl;
     ///  subtract baseline it is done during the creation of the tree
-    //       cout<<"maxpoints = "<<maxpoints<<"  bslsum = "<<bslsum<<endl;
+    //       cout<<"maxpoints = "<<maxpoints<<"  bslsum = "<<bslsum<<std::endl;
     for (int i = 0; i < maxpoints; i++)
       amplSum[i] -= bslsum;
     /// smooth sumn array for analysis
-    //       cout<<"2 SDD DSF ASDF SADF ASF ASF AS"<<endl;
+    //       cout<<"2 SDD DSF ASDF SADF ASF ASF AS"<<std::endl;
     SmoothArray(amplSum, sampl, maxpoints, 3, inverse);
-    //       cout<<"3 SDD DSF ASDF SADF ASF ASF AS"<<endl;
+    //       cout<<"3 SDD DSF ASDF SADF ASF ASF AS"<<std::endl;
     /// derivate sum array
     DerivateArray(amplSum, dsampl, maxpoints, dt, npt, 1);
 
-    //       cout<<"4 SDD DSF ASDF SADF ASF ASF AS"<<endl;
+    //       cout<<"4 SDD DSF ASDF SADF ASF ASF AS"<<std::endl;
 
     int ti = 0;
     int itrig = 0;
@@ -1242,19 +1292,20 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     /// spark, of a "baseline recovery event will not be analysed!!!
     if (detspark) {
       hSparkEvolution->Fill(evtime);
-      cout << " Spark (" << (totcharge > 10.) << ") or recovery ("
-           << (rmssum > 0.0015) << ") at event " << eventNo << endl;
+      std::cout << " Spark (" << (totcharge > 10.) << ") or recovery ("
+                << (rmssum > 0.0015) << ") at event " << eventNo << std::endl;
       eventNo++;
       continue;
     }
 
     while (ti < maxpoints - 50 && ntrigs < MAXTRIG) {
-      // cout<<"check: "<<ntrigs+1<<endl;
+      // cout<<"check: "<<ntrigs+1<<std::endl;
       ti = AnalyseLongPulse(maxpoints, sampl, dsampl, ipar, threshold, dt, ti);
       if (ti < 0)
         break;
-      // 	  cout <<"Found trig at "<<ti*dt<< "  "<< ti<< "  "<<itrig<< "
-      // "<<itrig*dt<< "  "<<ttrig<< "  "<< endl;
+      // 	  std::cout << "Found trig at "<<ti*dt<< "  "<< ti<< "
+      // "<<itrig<< "
+      // "<<itrig*dt<< "  "<<ttrig<< "  "<< std::endl;
 
       AddPar(ipar, &spar[ntrigs], dt);
 
@@ -1275,7 +1326,8 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
         hRateStructTrigger->Fill(t10corrected *
                                  microsec); // t10 is ns, so to pass to us
       }
-      // cout << "rate structure = " << spar[ntrigs].t10/1000. << endl;
+      // std::cout <<  "rate structure = " << spar[ntrigs].t10/1000. <<
+      // std::endl;
       hAmplvsRT->Fill(spar[ntrigs].ampl, (spar[ntrigs].t90 - spar[ntrigs].t10));
       hCHvsAMPL->Fill(spar[ntrigs].ampl,
                       spar[ntrigs].charge - spar[ntrigs].bslch);
@@ -1296,9 +1348,10 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
              spar[0].t10 * 1e-9; /// normally we arrive here only in the first
                                  /// peak per pulse!!!!
       // 	    cout<<"tnow set to "<<epoch<<" + "<<nn*1e-9<<" + "<<t0<<"
-      // "<< endl;
-      // cout << "hDT filling = " << (spar[ntrigs].t10-spar[ntrigs-1].t10)*1e-9
-      // << endl;
+      // "<< std::endl;
+      // std::cout <<  "hDT filling = " <<
+      // (spar[ntrigs].t10-spar[ntrigs-1].t10)*1e-9
+      // << std::endl;
       /// 	  if (spar[ntrigs].tot<400)
       /// 	    hsCH->Fill(spar[ntrigs].charge);
       T10 = spar[ntrigs].t10;
@@ -1336,10 +1389,10 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
           if (ntrigsNeutrons > 0)
             hNeutronsDt->Fill((spar[ntrigs].t10 - spar[ntrigs - 1].t10) *
                               1e-9); // in seconds
-          //     cout << "hDT filling = " <<
-          //     (spar[ntrigs].t10-spar[ntrigs-1].t10)*1e-9 << endl;
+          //     std::cout <<  "hDT filling = " <<
+          //     (spar[ntrigs].t10-spar[ntrigs-1].t10)*1e-9 << std::endl;
           if (t10corrected < 0.)
-            cout << "Negative tcor, Event = " << eventNo << endl;
+            std::cout << "Negative tcor, Event = " << eventNo << std::endl;
         }
         ntrigsNeutrons++;
       }
@@ -1350,20 +1403,20 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
     npeaks = ntrigs;
     npeaksNeutrons = ntrigsNeutrons;
-    //       cout<<"Found "<<ntrigsNeutrons<<" neutrons"<<endl;
-    //       if (npeaksNeutrons>1) cout <<"event "<<eventNo<<" n =
+    //       cout<<"Found "<<ntrigsNeutrons<<" neutrons"<<std::endl;
+    //       if (npeaksNeutrons>1) std::cout << "event "<<eventNo<<" n =
     //       "<<npeaksNeutrons<<"  "<< epoch - epochS<< "  "<< evtime - epochS<<
-    //       endl;
+    //       std::endl;
 
     ntrigsTot += npeaks;
     ntrigsTotNeutrons += npeaksNeutrons;
-    // std::cout << "exttrig: " << exttrig << " ntrigs: " << ntrigs
+    // std::cout <<  "exttrig: " << exttrig << " ntrigs: " << ntrigs
     //           << "  npeaks = " << npeaks
     //           << "  npeaksNeutrons = " << npeaksNeutrons << std::endl;
 
     if (!exttrig) {
       if (ntrigs == 0) {
-        // std::cout << "exttrig: " << exttrig << " ntrigs: " << ntrigs
+        // std::cout <<  "exttrig: " << exttrig << " ntrigs: " << ntrigs
         //           << "  npeaks = " << npeaks
         //           << "  npeaksNeutrons = " << npeaksNeutrons << std::endl;
         hRateEvolutionCheck->Fill(
@@ -1401,10 +1454,10 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
       if (eventNo > 0 && npeaks > 0) {
         // intantaneous flux ("peak flux")
-        // cout<<"tnow = "<<tnow<<"  nn = "<<nn*1e-9<<endl;
+        // cout<<"tnow = "<<tnow<<"  nn = "<<nn*1e-9<<std::endl;
         dtlast = tnow - tlast;
         // 	    cout<<"tlast = "<<tlast<<" + "<< +
-        // nn*1e-9+spar[npeaks-1].t10*1e-9<<"  dtlast = "<<dtlast<<endl;
+        // nn*1e-9+spar[npeaks-1].t10*1e-9<<"  dtlast = "<<dtlast<<std::endl;
         if (tlast > 0)
           hDt->Fill(dtlast);
       }
@@ -1419,16 +1472,16 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
         dtlastneutrons = tnowneutrons - tlastneutrons;
         // 	  if (dtlastneutrons<0)
         // 	  {
-        // 	    cout<<"negative DT!!!!\n event ="<<eventNo<<endl;
+        // 	    cout<<"negative DT!!!!\n event ="<<eventNo<<std::endl;
         // 	    printf("tnow = %18.8lf,    tlast =  %18.8lf ,     DT =
         // %18.8lf\n",tnowneutrons,tlastneutrons,dtlastneutrons);
         //  	    cout<<"tnow = "<<tnowneutrons<<"  tlast =
-        //  "<<tlastneutrons<<"    DT = "<< dtlastneutrons<<endl;
+        //  "<<tlastneutrons<<"    DT = "<< dtlastneutrons<<std::endl;
         // 	  }
         //  	  printf("tnow = %Lf,    tlast =  %Lf ,     DT =
         //  %Lf\n",tnowneutrons,tlastneutrons,dtlastneutrons);
         // 	  cout<<"tnow = "<<tnowneutrons<<"  tlast = "<<tlastneutrons<<"
-        // DT = "<< dtlastneutrons<<endl;
+        // DT = "<< dtlastneutrons<<std::endl;
         hNeutronsDt->Fill(dtlastneutrons);
         tlastneutrons = tnowneutrons;
       }
@@ -1438,7 +1491,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     // IF DRAW
     //----------------------
     if (draw) {
-      cout << "Found " << ntrigs << " pulses " << endl;
+      std::cout << "Found " << ntrigs << " pulses " << std::endl;
 
       ecanv->cd();
       TGraph *graphSum = new TGraph(maxpoints, ptime, amplSum);
@@ -1507,7 +1560,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
                                  spar[i].ttrig + spar[i].tot, threshold);
         line3->SetLineColor(3);
         line3->Draw();
-        // 	      cout<<i<<" \t "<<spar[i].ampl<<endl;
+        // 	      cout<<i<<" \t "<<spar[i].ampl<<std::endl;
       }
       ecanv->Modified();
       ecanv->Update();
@@ -1531,15 +1584,15 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     //---------------end if(draw)--------------------------------
 
     if (ntrigs > 20000) {
-      cout << ntrigs << " pulses in event " << eventNo << endl;
+      std::cout << ntrigs << " pulses in event " << eventNo << std::endl;
       return (ntrigs);
     }
 
     if (eventNo % (evpm) == 0) {
-      cout << "Found ntrigs =" << ntrigs << " pulses for event " << eventNo
-           << endl;
-      cout << "Found ntrigsNEUTRONS =" << ntrigsNeutrons << " pulses for event "
-           << eventNo << endl;
+      std::cout << "Found ntrigs =" << ntrigs << " pulses for event " << eventNo
+                << std::endl;
+      std::cout << "Found ntrigsNEUTRONS =" << ntrigsNeutrons
+                << " pulses for event " << eventNo << std::endl;
     }
 
     eventNo++;
@@ -1579,7 +1632,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
     y *= timebinwidth; /// convert it to neutrons per time periode width
     //       double weight = sqrt(y) / hNeutronsRateEvolution->GetBinError(i);
-    //        cout<<" y = "<<y<<endl;
+    //        cout<<" y = "<<y<<std::endl;
     //       if (y>0.000025)
     hNeutronsRate->Fill(y);
   }
@@ -1629,13 +1682,13 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   // hAMPL->SetStats(0);
   gStyle->SetOptStat(1100);
   gStyle->SetOptFit(111);
-  cout << "Fit " << 1 << endl;
+  std::cout << "Fit " << 1 << std::endl;
   hNeutronsAMPL->Fit(flandAmpl, "B+0", "", minax, amplMax * mV);
-  cout << "Fit " << 2 << endl;
+  std::cout << "Fit " << 2 << std::endl;
   hNeutronsAMPL->Fit(flandAmpl, "BM+", "", minax, amplMax * mV);
-  // cout<<"Fit "<<3<<endl;
+  // cout<<"Fit "<<3<<std::endl;
   // hNeutronsAMPL->Fit(f2,"BM+0","",threshold*mV,nTh*1.0*mV);
-  // cout<<"Fit "<<4<<endl;
+  // cout<<"Fit "<<4<<std::endl;
   // hNeutronsAMPL->Fit(f2,"BM+","",threshold*mV,nTh*1.0*mV);
   // // hAMPL->Draw();
   hNeutronsAMPL->SetLineColor(2);
@@ -1680,11 +1733,11 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   f3->SetLineColor(kGreen + 2);
 
   hNeutronsCH->SetStats(1);
-  cout << "Fit " << 5 << endl;
+  std::cout << "Fit " << 5 << std::endl;
   hNeutronsCH->Fit(f3, "E+", "", threshold, nThCh * 1.0);
-  cout << "Fit " << 6 << endl;
+  std::cout << "Fit " << 6 << std::endl;
   hNeutronsCH->Fit(flandCh, "B+0", "", minchx, chMax);
-  cout << "Fit " << 7 << endl;
+  std::cout << "Fit " << 7 << std::endl;
   hNeutronsCH->Fit(flandCh, "BM+", "", minchx, chMax);
 
   hNeutronsCH->SetMaximum(2. * hCH->GetMaximum());
@@ -1738,9 +1791,9 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   }
   frate->SetNpx(2000);
   hNeutronsRate->Sumw2();
-  cout << "Fit " << 8 << endl;
+  std::cout << "Fit " << 8 << std::endl;
   hNeutronsRate->Fit(frate, "WBN+", "", mean - 3. * rms, mean + 5. * rms);
-  cout << "Fit " << 9 << endl;
+  std::cout << "Fit " << 9 << std::endl;
   hNeutronsRate->Fit(frate, "MEB+", "", mean - 3. * rms, mean + 5. * rms);
   hNeutronsRate->SetLineColor(2);
   hNeutronsRate->Draw("");
@@ -1767,9 +1820,9 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
       fbsl2->SetParameter(1, mean2);
     }
     hRate->Sumw2();
-    cout << "Fit " << 10 << endl;
+    std::cout << "Fit " << 10 << std::endl;
     hRate->Fit(fbsl2, "W+", "same", 1.6, 20.);
-    cout << "Fit " << 11 << endl;
+    std::cout << "Fit " << 11 << std::endl;
     hRate->Fit(fbsl2, "RE+", "same", 1.6, 20.);
     fbsl2->Draw("same"); // no point to draw these
   }
@@ -1850,15 +1903,15 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   st->SetTextSize(0.03);
   subpad->Modified();
 
-  //  cout<<"______________________________"<<endl;
+  //  cout<<"______________________________"<<std::endl;
   //  subpad->ls();
-  //  cout<<"______________________________"<<endl;
+  //  cout<<"______________________________"<<std::endl;
   //  subpad->ls();
-  //  cout<<"______________________________"<<endl;
+  //  cout<<"______________________________"<<std::endl;
   //  hNeutronsAMPL->ls();
-  //  cout<<"______________________________"<<endl;
+  //  cout<<"______________________________"<<std::endl;
   //  rcanv->ls();
-  //  cout<<"______________________________"<<endl;
+  //  cout<<"______________________________"<<std::endl;
 
   //   rcanv->Update();
   rcanv->cd(4);
@@ -1878,7 +1931,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
   double tbeam = 5e-6;
 
-  cout << "Fit " << 12 << endl;
+  std::cout << "Fit " << 12 << std::endl;
   hDt->Fit(f1, "+QB0", "", tmax / 20., tmax); // crate[4]);
 
   double rates = 1. * f1->GetParameter(1);
@@ -1889,8 +1942,8 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
   gStyle->SetOptFit(111);
   gStyle->SetOptStat(110);
-  cout << "total rate = " << crate << " c/s \t calculated = " << rates
-       << " c/s " << endl;
+  std::cout << "total rate = " << crate << " c/s \t calculated = " << rates
+            << " c/s " << std::endl;
   hDt->SetLineColor(4);
   hDt->SetMarkerColor(4);
   hDt->SetMarkerStyle(2);
@@ -1919,7 +1972,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   f12->SetParameter(1, exprate);
   f12->SetParLimits(0, 0.1e-6, 1e6);
   f12->SetLineColor(kRed + 2);
-  cout << "Fit " << 13 << endl;
+  std::cout << "Fit " << 13 << std::endl;
   hNeutronsDt->Fit(f12, "+B0", "", tmax / 100., tmax); // crate[4]);
   f12->Draw("same");
 
@@ -1935,9 +1988,9 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   st->SetTextSize(0.03);
   subpad->Modified();
 
-  cout << "ntrigsTotal = " << ntrigsTot << endl;
+  std::cout << "ntrigsTotal = " << ntrigsTot << std::endl;
   double SF = ntrigsTot / (f1->GetParameter(1));
-  cout << "SF = " << SF << endl;
+  std::cout << "SF = " << SF << std::endl;
 
   //   rcanv->Update();
   rcanv->cd(5);
@@ -2139,7 +2192,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   fgaus3->SetParameter(2, 50.);
   fgaus3->SetParameter(0, hCHovAmpl->GetMaximum());
   fgaus3->SetParameter(1, maxbinval);
-  cout << "Fit " << 14 << endl;
+  std::cout << "Fit " << 14 << std::endl;
   hCHovAmpl->Fit(fgaus3, "W", "", maxbinval - 150., maxbinval + 150.);
   runpar->chovampl = fgaus3->GetParameter(1);
   runpar->schovampl = fgaus3->GetParameter(2);
@@ -2200,7 +2253,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   fgrt->SetParameter(0, hNeutronsRT->GetMaximum());
   fgrt->SetParameter(1, hNeutronsRT->GetMean());
   hNeutronsRT->Sumw2();
-  cout << "Fit " << 15 << endl;
+  std::cout << "Fit " << 15 << std::endl;
   hNeutronsRT->Fit(fgrt, "mb+", "same",
                    hNeutronsRT->GetMean() - 3 * hNeutronsRT->GetRMS(),
                    hNeutronsRT->GetMean() + 3 * hNeutronsRT->GetRMS());
@@ -2218,7 +2271,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   runpar->width = hNeutronsPW->GetMean();
   fgw->SetParameter(1, runpar->width);
   hNeutronsPW->Sumw2();
-  cout << "Fit " << 16 << endl;
+  std::cout << "Fit " << 16 << std::endl;
   hNeutronsPW->Fit(fgw, "mb+", "same",
                    runpar->width - 3 * hNeutronsPW->GetRMS(),
                    runpar->width + 3 * hNeutronsPW->GetRMS());
@@ -2234,7 +2287,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   fgtot->SetParameter(0, hNeutronsTOT->GetMaximum());
   fgtot->SetParameter(1, hNeutronsTOT->GetMean());
   hNeutronsTOT->Sumw2();
-  cout << "Fit " << 17 << endl;
+  std::cout << "Fit " << 17 << std::endl;
   hNeutronsTOT->Fit(fgtot, "mb+", "same",
                     hNeutronsTOT->GetMean() - 3 * hNeutronsTOT->GetRMS(),
                     hNeutronsTOT->GetMean() + 3 * hNeutronsTOT->GetRMS());
@@ -2542,9 +2595,9 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   snprintf(command, sizeof(command),
            "cd %s\nmontage %s -tile 1x2 -geometry 1600 %s", plotdirname, snames,
            psname);
-  cout << "Creating Summary file:\n" << command << endl;
+  std::cout << "Creating Summary file:\n" << command << std::endl;
   int comtst = system(command);
-  cout << "Done!" << endl;
+  std::cout << "Done!" << std::endl;
 
   RegisterRunParameters(runpar, basedirname);
 
