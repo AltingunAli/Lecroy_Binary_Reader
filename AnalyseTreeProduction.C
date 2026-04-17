@@ -21,6 +21,7 @@
 #include <TString.h>
 #include <TStyle.h>
 #include <TTimeStamp.h>
+#include <iostream>
 #include <ostream>
 #include <sstream>
 
@@ -51,12 +52,16 @@ int FindZeros(int n, double *data) {
 }
 // nTh- neutron threshold in mV
 // threshold - amplitude threshold in mV
-// inverse - 1 for negative pulses, 1 for positive
+// inverse - 1 for negative pulses, 1 for positive - This is for the functions,
+// will be fixed later, polarity 1 for positive pulses, -1 for negative pulses
 int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
                           int saveWF = 0, double threshold = 200.0,
-                          double nTh = 300.0, int inverse = 1, int exttrig = 0,
-                          int nRun = 1, int bkg = 0, string filetype = "") {
+                          double nTh = 300.0, int polarity = -1,
+                          int exttrig = 0, int nRun = 1, int bkg = 0,
+                          string filetype = "") {
   gROOT->LoadMacro("MyFunctions.C");
+
+  int inverse = 1;
 
   char particle[20];
   if (bkg == 1)
@@ -76,12 +81,13 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   if (nTh > 0)
     nTh *= -1;
 
-  nTh = fabs(nTh);
+  // nTh = fabs(nTh);
   threshold *= 1e-3;
   nTh *= 1e-3;
 
   if (fabs(nTh) < fabs(threshold))
-    nTh = fabs(threshold);
+    nTh = threshold;
+  // nTh = fabs(threshold);
 
   char dirname[1000];
   char anadirname[1000];
@@ -117,19 +123,23 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     int tst = system(command);
     //    cout<<command<<endl<<"returned: "<<tst<<std::endl;
     if (tst != 0) {
-      std::cerr << "\n***********************************************************"
-                   "********"
-                   "*****\n"
-                << "Command below returned " << tst << ": \n"
+      std::cerr
+          << "\n***********************************************************"
+             "********"
+             "*****\n"
+          << "Command below returned " << tst << ": \n"
+          << std::endl
+          << command << std::endl;
+      std::cerr << "\nProbably tree for the detector " << detNo << " and run "
+                << runNo << " was not found in directory: \n    " << basedirname
                 << std::endl
-                << command << std::endl;
-      std::cerr << "\nProbably tree for the detector " << detNo
-                << " and run " << runNo << " was not found in directory: \n    "
-                << basedirname << std::endl
-                << "\nRun bin2tree to create the tree first, and then run this code to analyse it. \n"
-                << "Exiting...\n***********************************************************"
+                << "\nRun bin2tree to create the tree first, and then run this "
+                   "code to analyse it. \n"
+                << "Exiting...\n***********************************************"
+                   "************"
                    "********"
-                   "*****" << std::endl;
+                   "*****"
+                << std::endl;
       return tst;
     }
     ftmp = fopen(afile, "r");
@@ -198,7 +208,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   gStyle->SetOptStat(1001111);
   gStyle->SetNdivisions(507);
 
-  std::cout << "********************\n\n\n Starting now...\n\n" << std::endl;
+  std::cout << "********************\n\n\n Starting now..." << std::endl;
 
   int position = strlen(basedirname);
   snprintf(dirname, sizeof(dirname), "%s/S%03d-%02d-%d-%d", basedirname, detNo,
@@ -213,7 +223,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   if (strlen(ftype) > 1)
     snprintf(dirname, sizeof(dirname), "%s-%s", dirname, ftype);
 
-  std::cout << "\n\n\nWorking directory: " << dirname << endl << std::endl;
+  std::cout << "\n\n\nWorking directory: " << dirname << std::endl;
 
   string linein, linein2;
   char cline[1000];
@@ -336,6 +346,31 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   TBranch *branch;
   int nfiles[4] = {0, 0, 0, 0};
 
+  // Tree:
+  // eventNo: Number of the events
+  // dt: Time interval between samples in ns
+  // epoch: Unix timestamp in seconds
+  // nn: Nanosecond part of the timestamp,
+  //    Combined with epoch gives full time
+  //    precision (epoch seconds + nn nanoseconds)
+  // t0: Trigger time offset in seconds for each segment
+  //    (when multiple segments/events per file)
+  // itrigger:
+  // Sample index where the trigger occurred (if external trigger channel
+  //    specified)
+  // ttrig: Trigger time in nanoseconds (computed as itrigger * dt)
+  // sumpoints: Number of points in the amplSum array
+  // bslSum: Baseline value calculated from Gaussian fit to the waveform
+  //    histogram
+  // rmsSum: RMS of the baseline noise calculated from Gaussian fit to
+  //    the waveform histogram
+  // rmax: Maximum value in the waveform
+  // rmin: Minimum value in the waveform
+  // amplSum: Baseline-subtracted waveform
+  // fitstatus1:Status of Gaussian fit to the baseline histogram
+  //    (0 = success, non-zero = error/failure)
+  // fitstatus2: Status of fit to baseline-subtracted signal
+  //   (currently unused/always 0)
   snprintf(treename, sizeof(treename), "RawDataTree");
   snprintf(treetitle, sizeof(treetitle), "Raw data tree");
   tree = (TTree *)ifile->Get(treename);
@@ -403,20 +438,20 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   gSystem->mkdir(allplotdirname, kTRUE);
   gSystem->ChangeDirectory(allplotdirname);
 
-  ///  prepare time array
-  ptime[0] = 0;
-  tree->GetEntry(1);
-  for (int i = 1; i < 3000000; i++) {
-    ptime[i] = ptime[i - 1] + dt; // dt in ns--> ptime in ns...
-  }
+  // ///  prepare time array
+  // ptime[0] = 0;
+  // tree->GetEntry(1);
+  // for (int i = 1; i < 3000000; i++) {
+  //   ptime[i] = ptime[i - 1] + dt; // dt in ns--> ptime in ns...
+  // }
 
-  std::cout << " dt = " << dt << std::endl;
-
+  std::cout << std::endl;
+  // std::cout << "dt of the samples in (ns):  " << dt << std::endl;
   double nThCh = fabs(172.08 * nTh);
   nThCh = fabs(200.0 * nTh);
   std::cout << "Neutron thresholds:   Amplitude = " << nTh * 1000.
             << " mV ,  Charge = " << nThCh << " nC \n"
-            << std::endl;
+            << "dt of the samples in (ns):  " << dt << std::endl;
 
   // Create the Event_WaveForms directory if it does not exist
 
@@ -424,18 +459,22 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   std::string outDir = Form("%s/Event_WaveForms/S%03d-%02d-%d-%d", WORKDIR,
                             detNo, runNo, vm, vd);
 
-  // // In order to create the waveforms, first the AnalyseTreeProduction should be
+  // // In order to create the waveforms, first the AnalyseTreeProduction should
+  // be
   // // run with draw option 0
   // if (draw == 0 && !fs::exists(outDir)) {
   //   std::cerr
-  //       << "*******************************************************************"
+  //       <<
+  //       "*******************************************************************"
   //          "*****\n"
   //       << " In order to draw the waveforms: \n"
   //       << "  - First run AnalyseTreeProduction "
   //          "with draw option 0 to create the root file. Exiting...\n"
-  //       << "  - Example:  root -l -b -q 'AnalyseTreeProduction.C(1, 1, 0, 0, "
+  //       << "  - Example:  root -l -b -q 'AnalyseTreeProduction.C(1, 1, 0, 0,
+  //       "
   //          "100, 100)' \n"
-  //       << "*******************************************************************"
+  //       <<
+  //       "*******************************************************************"
   //          "*****"
   //       << std::endl;
   //   return -1;
@@ -451,20 +490,8 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     }
   }
 
-  TGraph *waveform;
-  TGraph *derivative;
-  TGraph *integralh;
-  char cname[100];
-
-  /// Create Canvases for draw option
-  TCanvas *ecanv, *dcanv, *icanv;
-  if (draw) {
-    ecanv = new TCanvas("EventDisplay", "Event display");
-    dcanv = new TCanvas("DerivativeDisplay", "Derivative display");
-    icanv = new TCanvas("IntegrqalDisplay", "Integral display");
-  }
-  int eventNo = 0;
-
+  // Create the color array for the graphs, with 4 different colors repeated
+  // every 4 graphs
   int clr[40] = {kRed, kBlue, kGreen, kMagenta};
   int col0 = 1;
   for (int i = 4; i < 40; i += 4) {
@@ -476,7 +503,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   }
 
   // Ctreate output root file and tree
-  TFile *ofile;
+  TFile *ofile = nullptr;
 
   // if draw is on, open the file in read mode, otherwise create a new file
   if (draw)
@@ -487,26 +514,30 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   snprintf(treename, sizeof(treename), "ParameterTree");
   snprintf(treetitle, sizeof(treetitle), "Pulse Parameter tree");
 
+  //******************************************************************************************//
+  // Output tree will contain the parameters of the pulses
   TTree *otree = new TTree(treename, treetitle);
 
+  int eventNo = 0;
   long double tnow = 0., tlast = 0., tlastneutrons = 0.;
   long double dtlast = 0., dtlastneutrons = 0.;
-  int npeaks, npeaksNeutrons;
+  int npeaks = 0, npeaksNeutrons = 0;
   int ntrigsTot = 0;
   int ntrigsTotNeutrons = 0;
 
+  double T10 = 0;    // = new double[20000];
+  double T90 = 0;    // = new double[20000];
+  double TB10 = 0;   // = new double[20000];
+                     //   double Tstart;// = new double[20000];
+                     //   double Tend;// = new double[20000];
+  double Ampl = 0;   // = new double[20000];
+  double Charge = 0; // = new double[20000];
+  double Width = 0;  // = new double[20000];
+  double TOT = 0;    // = new double[20000];
+  double BSLch = 0;  // = new double[20000];
+
   otree->Branch("eventNo", &eventNo, "eventNo/I");
   otree->Branch("evtime", &tnow, "evtime/l");
-  double T10;    // = new double[20000];
-  double T90;    // = new double[20000];
-  double TB10;   // = new double[20000];
-                 //   double Tstart;// = new double[20000];
-                 //   double Tend;// = new double[20000];
-  double Ampl;   // = new double[20000];
-  double Charge; // = new double[20000];
-  double Width;  // = new double[20000];
-  double TOT;    // = new double[20000];
-  double BSLch;  // = new double[20000];
   otree->Branch("npeaks", &npeaks, "npeaks/I");
   otree->Branch("t10", &T10, "t10/D");
   otree->Branch("tb10", &TB10, "tb10/D");
@@ -517,7 +548,11 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   otree->Branch("ampl", &Ampl, "ampl/D");
   otree->Branch("charge", &Charge, "charge/D");
   otree->Branch("BSLcharge", &BSLch, "BSLcharge/D");
+  //******************************************************************************************//
 
+  //******************************************************************************************//
+  // create histograms for the parameters, and 2D histograms for the
+  // correlations between them
   TH1D *hAMPL;
   TH1D *hCH;
   TH1D *hnCH;
@@ -535,7 +570,6 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   TH2D *hAmplvsTOT;
   TH1D *hRateEvolutionCheck;
   TH2D *hAmplvsRT;
-
   //------------------------------
   // doubling the histos for the nThreshold (neutrons threshold)
   TH1D *hNeutronsAMPL;
@@ -550,52 +584,67 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   TH1D *hBkgNeutronsRateEvolution;
   TH1D *hNeutronsRateStructTrigger; // time corrected by trigger position
   TH1D *hSparkEvolution;
-  //--------------------------------
+  //******************************************************************************************//
 
+  //******************************************************************************************//
+  // Create parameters for analysis and histograms, and branches for the output
+  // tree
+
+  // Unit conversion constants
   const double microsec = 1e-3;
   const double msec = 1e-6;
+  const double mV = 1000.; // conversion from V to mV
+  const double nanosec = 1e-9;
 
+  // Default histogram limits
   int nbins = 200;
-  double amplMax = 0.16;
-  double amplMin = 0.;
-  double chMax = 50.0;
-  if (vm > 520) {
-    amplMax = 0.3;
-    chMax = 120.0;
-  }
-  if (vm == 450 && vd == 1050) {
-    amplMax = 0.3;
-    chMax = 200.0;
-  }
-  if (vm == 450 && vd == 1050) {
-    amplMax = 0.3;
-    chMax = 200.0;
+  double amplMax = 0.16; // Maximum amplitude [V] = 160 mV
+  double amplMin = 0.;   // Minimum amplitude [V]
+  double chMax = 50.0;   // Maximum charge [a.u.]
+
+  if (vm > 520) {  // If mesh voltage > 520V (higher gain)
+    amplMax = 0.3; // Increase to 300 mV range
+    chMax = 120.0; // Increase charge range
   }
 
-  //   double chMin = 0.;
-  double pwMax = 400.;
-  double rtMax = 120.;
-  double totMax = 400.;
-  double rbins = 20;
-  double rmax = 20.;
-  int dtbins = 800;
-  double tmax = 1.;
+  if (vm == 450 && vd == 1050) { // Specific HV setting
+    amplMax = 0.3;               // 300 mV range
+    chMax = 200.0;               // Even larger charge range
+  }
 
-  tree->GetEntry(0);
-  long double epochS = 1. * epoch;
-  double framesize = maxpoints * dt * microsec; // microsec
-  tree->GetEntry(nevents - 1);
-  tree->GetEntry(nevents - 1);
+  double pwMax = 400.;  // Maximum pulse width [ns]
+  double rtMax = 120.;  // Maximum rise time [ns] (10% to 90%)
+  double totMax = 400.; // Maximum Time-Over-Threshold [ns]
+  double rbins = 20;    // Number of bins for rate histograms
+  double rmax = 20.;    // Maximum range value
+  int dtbins = 800;     // Number of bins for delta-T histogram
+  double tmax = 1.;     // Maximum time difference [seconds]
+
+  tree->GetEntry(0);               // Load first event
+  long double epochS = 1. * epoch; // Start time [seconds]
+  double framesize =
+      maxpoints * dt * microsec; // Frame time(μs), dt: deltat of samples (ns)
+  tree->GetEntry(nevents - 1);   // Load last event
+
+  // End time with nanosecond precision, plus 4 ms buffer
   long double epochF = (1. * epoch + nn * 1e-9) + 0.004;
-  std::cout << "Epoch S = " << epochS << std::endl;
-  std::cout << "Epoch F = " << epochF << std::endl;
 
+  // Print start and end times for debugging
+  std::cout << std::setprecision(13) << "Epoch Start: " << epochS << std::endl;
+  std::cout << std::setprecision(13) << "Epoch Final: " << epochF << std::endl;
+  std::cout << std::setprecision(6) << "Total time span: " << epochF - epochS
+            << " seconds" << std::endl;
+  std::cout << std::endl;
+
+  // Expected average rate or events per second
   double exprate = nevents / (epochF - epochS);
 
   int expdt = 1;
+  // Short frames (fast detector)
   if (maxpoints < 5000) {
-    expdt = ((int)(1. / exprate)) / 1 +
-            1; /// Normalizing to seconds for the slow detector
+    /// Normalizing to seconds for the slow detector
+    expdt = ((int)(1. / exprate)) / 1 + 1;
+
     std::cout << "Expected average rate = " << exprate
               << " / sec ,  average DT = " << 1. / exprate
               << " , implemented DT = " << expdt << std::endl;
@@ -603,26 +652,30 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     //     return 1;
   }
 
-  int tdiviser = 1 + (int)(nevents / (epochF - epochS) * 0.1);
+  // int tdiviser = 1 + (int)(nevents / (epochF - epochS) * 0.1);
   //   int tbins = (int) ((epochF-epochS)/tdiviser);
 
-  int ntim = 10;
-  double timebinwidth = ntim * expdt; /// multiples of 10 (or 20...) sec!!!
-  int tbins = (int)((epochF - epochS) / (timebinwidth));
+  int ntim = 10; // 10 bins per grouping
+  // Bin width in seconds, multiples of 10 (or 20...) sec!!!
+  double timebinwidth = ntim * expdt;
+  int tbins = (int)((epochF - epochS) / (timebinwidth)); // Number of time bins
 
-  tbins += 1;
-  epochF = epochS + (tbins)*timebinwidth;
+  tbins += 1;                             // add one for safety
+  epochF = epochS + (tbins)*timebinwidth; // Adjust end time to bin boundary
 
+  // Create histogram names and titles
   char hname[200], htitle[200], axtitle[200];
 
-  double period = timebinwidth / 1.0;
-  //   int tbins2 = (int)((epochF-epochS)/(period));//
-
-  const double mV = 1000.; /// set mV=1. to make everything in volts!
-
+  // Volts per ADC bit (8-bit = 256 levels)
+  // Full scale range (frmax - frmin)
   double rstep = (frmax - frmin) / 256.;
-  std::cout << "Rmin = " << frmin << "  , Rmax = " << frmax
-            << "  step = " << rstep * mV << " mV" << std::endl;
+
+  // Print the voltage range and step size for debugging
+  std::cout << "Range: from " << frmin << " to " << frmax
+            << " V (rmin and rmax), step = " << rstep * mV << " mV"
+            << std::endl;
+
+  // Ensures threshold isn't less than 3*rstep.
   if (fabs(threshold) < 3 * rstep) {
     std::cout << "setting new threshold from " << threshold * mV
               << " mV   to    ";
@@ -630,44 +683,17 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     std::cout << threshold * mV << " mV" << std::endl;
   }
 
+  // Maximum amplitude for histograms
   amplMax = 256 * (rstep);
 
   tree->GetEntry(nevents - 1);
   int longpulse = 1;
 
-  nbins = 256;
+  nbins = 256; // Start with 256 bins
   if (nevents < 25000)
-    nbins /= 2;
+    nbins /= 2; // Few events -> fewer bins (128)
   if (nevents > 200000)
-    nbins *= 2;
-
-  if (maxpoints < 5000) {
-    tmax = 1. / 20.;
-    longpulse = 0;
-    rmax = 500;
-    rbins = 100;
-  } else {
-    tmax = 1. / 200.;
-    rmax = 2000;
-    rbins = 100;
-  }
-
-  if (nRun == 0) {
-    rmax = 50;
-    rbins = 50;
-  }
-  if (bkg) {
-    rmax = 20;
-    rbins = 20;
-    dtbins = 1000;
-    tmax = 3.;
-  }
-
-  if (exttrig) {
-    rmax = 20;
-    rbins = 20;
-    tmax = 1. / 5000.;
-  }
+    nbins *= 2; // Many events -> more bins (512)
 
   if (1) /// for Fast detector callibratyion
   {
@@ -677,20 +703,45 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     tmax = 300.;
   }
 
-  if (maxpoints < 5000) {
+  if (maxpoints < 5000) { // for short frames
+
+    // tmax = 1. / 20.;      // Delta-T max = 0.05 seconds
+    // longpulse = 0;        // Not a long pulse mode
+    // rmax = 500;           // Rate max = 500
+    // rbins = 100;          // 100 rate bins
+
     tmax = 1. / exprate * 10.;
     dtbins = 500;
     longpulse = 0;
-    rmax = (int)(5 * exprate * period);
+    rmax = (int)(5 * exprate * timebinwidth);
     rbins = rmax;
-    //     cout<<"rmax = "<<rmax <<"    tmax = "<<tmax<<std::endl; return 1;
+
+  } else {            // for long frames
+    tmax = 1. / 200.; // Delta-T max = 0.005 seconds
+    rmax = 2000;      // Rate max = 2000
+    rbins = 100;      // 100 rate bins
   }
 
-  ///  for (int i=0;i<1; i++)
-  ///  {
+  if (nRun == 0) { // Gamma run (nRun -> 0)
+    rmax = 50;     // Lower the rate range
+    rbins = 50;
+  }
+  if (bkg) {   // Background run
+    rmax = 20; // Even lower rate range
+    rbins = 20;
+    dtbins = 1000; // More delta-T bins
+    tmax = 3.;     // Look at 3 second intervals
+  }
 
-  ///________________________________________________________________
-  /// the following plots concern the neutron rates (per pulse)
+  if (exttrig) { // External trigger mode
+    rmax = 20;
+    rbins = 20;
+    tmax = 1. / 5000.; // Very short: 0.0002 seconds
+  }
+  //******************************************************************************************//
+
+  //******************************************************************************************//
+  /// The following plots concern the neutron rates (per pulse)
 
   // Nneutrons per pulse if > 0, as found by peak detection
   snprintf(hname, sizeof(hname), "S%03d_run%02d_Rate_%s", detNo, runNo,
@@ -702,16 +753,19 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   hRate = new TH1D(hname, htitle, rbins, 0., rmax);
   // Nneutrons per pulse as found by rate evolution plot!!!
   snprintf(htitle, sizeof(htitle),
-           "Rate (neutrons per %gs) from evolution plot", period);
+           "Rate (neutrons per %gs) from evolution plot", timebinwidth);
   snprintf(hname, sizeof(hname),
            "S%03d_run%02d_Rate_Neutrons_per%3.1fseconds_%s", detNo, runNo,
-           period, ftype);
+           timebinwidth, ftype);
   hNeutronsRate = new TH1D(hname, htitle, rbins, 0., rmax);
-  snprintf(axtitle, sizeof(axtitle), "neutrons / %gsec", period);
+  snprintf(axtitle, sizeof(axtitle), "neutrons / %gsec", timebinwidth);
   hNeutronsRate->GetXaxis()->SetTitle(axtitle);
+  hNeutronsRate->GetXaxis()->CenterTitle();
+  hNeutronsRate->GetYaxis()->SetTitle("Counts");
+  hNeutronsRate->GetYaxis()->CenterTitle();
 
-  ///________________________________________________________________
-  /// the following plots concern the neutron (and gamma) rate evolution
+  //******************************************************************************************//
+  /// The following plots concern the neutron (and gamma) rate evolution
   /// (per pulse periode multiple, as it has been calculated from the
   /// timebinwidth)
 
@@ -741,9 +795,11 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   hNeutronsRateEvolution->GetXaxis()->SetLabelSize(0.03);
   hNeutronsRateEvolution->GetXaxis()->SetLabelOffset(0.02);
   hNeutronsRateEvolution->SetMinimum(0);
-
   timebinwidth = hRateEvolution->GetBinWidth(1);
-  std::cout << "Time bin = " << timebinwidth << std::endl;
+
+  // // Print the time bin width for debugging
+  // std::cout << "Time bin number = " << timebinwidth << std::endl;
+  // std::cout<< std::endl;
 
   // correlated (pulse uncorrelated) neutrons average rate per pulse
   snprintf(hname, sizeof(hname),
@@ -763,9 +819,10 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
            runNo, ftype);
   snprintf(htitle, sizeof(htitle), "Rate normalization plot");
   hRateEvolutionCheck = new TH1D(hname, htitle, tbins, epochS, epochF);
+  //******************************************************************************************//
 
-  ///________________________________________________________________
-  /// the following plots concern the rate structures WITHOUT correction for the
+  //******************************************************************************************//
+  /// The following plots concern the rate structures WITHOUT correction for the
   /// beam trigger
 
   snprintf(hname, sizeof(hname),
@@ -788,8 +845,9 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   snprintf(htitle, sizeof(htitle), "Linac4 trigger ");
   hStructTrigger = new TH1D(hname, htitle, 250, 0., framesize);
   hStructTrigger->SetLineColor(kGreen + 2);
+  //******************************************************************************************//
 
-  ///________________________________________________________________
+  //******************************************************************************************//
   ///  Rate structures after trigger subtraction
 
   snprintf(hname, sizeof(hname),
@@ -808,8 +866,9 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
       new TH1D(hname, htitle, 250, -0.25 * framesize, 0.75 * framesize);
   hRateStructTrigger->GetXaxis()->SetTitle("t [#mus]");
   hRateStructTrigger->SetMinimum(0);
+  //******************************************************************************************//
 
-  ///________________________________________________________________
+  //******************************************************************************************//
   ///  DeltaT plots
 
   snprintf(hname, sizeof(hname), "S%03d_run%02d_consecutivePulses_#DeltaT_%s",
@@ -824,8 +883,9 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   snprintf(htitle, sizeof(htitle), "#DeltaT neutrons");
   hNeutronsDt = new TH1D(hname, htitle, dtbins, 0., tmax);
   hNeutronsDt->GetXaxis()->SetTitle("#DeltaT [sec]");
+  //******************************************************************************************//
 
-  ///________________________________________________________________
+  //******************************************************************************************//
   ///  Amplitude plots
 
   snprintf(hname, sizeof(hname), "S%03d_run%02d_Amplitude_%s", detNo, runNo,
@@ -851,8 +911,9 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   h2dNeutronsAMPL->GetXaxis()->SetLabelSize(0.03);
   h2dNeutronsAMPL->GetXaxis()->SetLabelOffset(0.02);
   h2dNeutronsAMPL->GetYaxis()->SetTitle("Pulse amplitude [mV]");
+  //******************************************************************************************//
 
-  ///________________________________________________________________
+  //******************************************************************************************//
   ///  Charge plots
 
   snprintf(hname, sizeof(hname), "S%03d_run%02d_Charge_%s", detNo, runNo,
@@ -889,8 +950,9 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   h2dNeutronsCH->GetXaxis()->SetLabelSize(0.03);
   h2dNeutronsCH->GetXaxis()->SetLabelOffset(0.02);
   h2dNeutronsCH->GetYaxis()->SetTitle("charge [a.u.]");
+  //******************************************************************************************//
 
-  ///________________________________________________________________
+  //******************************************************************************************//
   ///  pulse time properties plots
 
   snprintf(htitle, sizeof(htitle), "Rise Time , n_{th} = %g mV", nTh * 1000);
@@ -909,8 +971,9 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   snprintf(fname2, sizeof(fname2), "S%03d_run%02d_TOT_%s", detNo, runNo, ftype);
   hTOT = new TH1D(fname2, htitle, int(totMax / dt), 0., totMax);
   hTOT->GetXaxis()->SetTitle("TOT [ns]");
+  //******************************************************************************************//
 
-  ///________________________________________________________________
+  //******************************************************************************************//
   ///  Correlation plots
   double chovamax = 2000.;
   if (dv <= 50 || vm > 490)
@@ -950,8 +1013,9 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   hAmplvsTOT->GetXaxis()->SetTitle("Pulse amplitude [V]");
   hAmplvsTOT->GetYaxis()->SetTitle("TOT [ns]");
   hAmplvsTOT->SetStats(0);
+  //******************************************************************************************//
 
-  //----------------------------------------------
+  //******************************************************************************************//
   //---------doubling histos for nThreshold--------
 
   snprintf(fname2, sizeof(fname2), "S%03d_run%02d_Risetime_NeutronsTh%gmV_%s",
@@ -972,320 +1036,401 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   snprintf(htitle, sizeof(htitle), "TOT  (n_{th} = %g mV)", nTh * 1000);
   hNeutronsTOT = new TH1D(fname2, htitle, int(totMax / dt), 0., totMax);
   hNeutronsTOT->GetXaxis()->SetTitle("TOT [ns]");
+  //******************************************************************************************//
 
-  //-----------------------------------------------------
-  ///  }
-
+  // number of points to integrate for the charge calculation
   int npt = 2;
-  double DT = 4.; // 8.;  /// in [ns]
-  int evpm = 1000;
+  // Time interval for charge integration (ns)
+  double DT = 4.;
+
+  int evpm = 1000; // events per progress message
   if (nevents > 100000)
     evpm = 10000;
   if (maxpoints > 10000)
     evpm = 100;
 
-  eventNo = 0;
-  int totNtrigs = 0;
-  int totNsparks = 0;
-  long double drawdt = 0.;
+  eventNo = 0; // event number
+  // int totNtrigs = 0; // Total triggers (pulses) across all events
+  int totNsparks = 0;      // Total spark events detected across all events
+  long double drawdt = 0.; // For tracking time between draws
+
   if (detNo == 5)
     eventNo = 2000; /// skip first events because of the time change in the
-                    /// osciloscope.
+  /// osciloscope.
 
+  // Create the graphs and histos for the waveform, derivative and integral for
+  // draw option
+  TGraph *waveform = nullptr;
+  TGraph *derivative = nullptr;
+  TGraph *integralh = nullptr;
+  TH1D *hWaveformAmpl =
+      nullptr; // For storing the amplitude of the waveform for the drawn event
+  // Name for the graphs
+  char cname[100];
+
+  // At the beginning of the function, before the event loop:
+  TCanvas *ecanv = nullptr;
+  TCanvas *dcanv = nullptr;
+  TCanvas *icanv = nullptr;
+
+  if (draw) {
+    // Create canvases with explicit size and make them visible
+    ecanv = new TCanvas("EventDisplay", "Event display", 800, 600);
+    ecanv->SetWindowPosition(100, 100); // Position on screen
+    ecanv->Draw();                      // Force display
+
+    dcanv = new TCanvas("DerivativeDisplay", "Derivative display", 800, 600);
+    dcanv->SetWindowPosition(900, 100);
+    dcanv->Draw();
+
+    icanv = new TCanvas("IntegralDisplay", "Integral display", 800, 600);
+    icanv->SetWindowPosition(100, 700);
+    icanv->Draw();
+
+    // Process ROOT events to ensure windows appear
+    gSystem->ProcessEvents();
+  }
+
+  // Print message: starting process
+  std::cout << std::endl;
+  std::cout << "****************************************" << std::endl;
   std::cout << "Start processing the " << nevents << " events" << std::endl;
+  std::cout << std::endl;
+
+  //******************************************************************************************//
+  // Loop over all events in the tree
   while (eventNo < nevents) {
 
+    // Prompt user to enter event number to draw if in draw mode
     if (draw) {
       std::cout
-          << endl
+          << std::endl
           << "________________________________________________________________"
              "______"
-          << endl
+          << std::endl
           << std::endl;
-      ;
       std::cout << "Event to draw : ";
-      cin >> eventNo;
+      std::cin >> eventNo;
     }
 
-    if (eventNo < 0 || eventNo >= nevents)
-      break;
-    ///    if (eventNo<25 || eventNo>=150) {eventNo++; continue;}
+    // Check if the entered event number is valid
+    if (eventNo < 0 || eventNo >= nevents) {
+      if (draw) {
+        std::cerr
+            << "Invalid event number. Please enter a number between 0 and "
+            << nevents - 1 << "." << std::endl;
+        continue; // Prompt again for a valid event number
+      } else {
+        std::cerr << "Event number " << eventNo
+                  << " is out of range. Skipping this event. Please enter a "
+                     "number between 0 and "
+                  << nevents - 1 << "." << std::endl;
+        return -1; // Exit the program if not in draw mode
+      }
+    }
 
-    tree->GetEntry(eventNo);
-    double maxc[] = {0., 0., 0., 0.};
-    double minc[] = {0., 0., 0., 0.};
-    double maxd[] = {0., 0., 0., 0.};
-    double mind[] = {0., 0., 0., 0.};
-    long double evtime = 1. * epoch + 1. * nn * 1e-9;
-    //       long double evtime = 1.*epoch+1.*nn*1e-9 + t0;
-    //       printf("t0 = %8.8lf ,  evtime = %8.8LF\n",t0,evtime);
+    tree->GetEntry(eventNo); // Get the current event data from the tree
+    double maxc[] = {0., 0., 0., 0.}; // Max values for each channel
+    double minc[] = {0., 0., 0., 0.}; // Min values for each channel
+    double maxd[] = {0., 0., 0., 0.}; // Max derivative values
+    double mind[] = {0., 0., 0., 0.}; // Min derivative values
 
-    double totcharge = 0.;
+    // Full event timestamp = epoch (seconds) + nn (nanoseconds converted to
+    // seconds).
+    long double evtime = 1. * epoch + 1. * nn * 1e-9; //
 
-    //       cout<<"frmax = "<<frmax<<"   "<<frmin<<"    "<<frmin -
-    //       frmax<<std::endl;
+    // Debugging print statements for event time
+    // long double evtime = 1.*epoch+1.*nn*1e-9 + t0;
+    // printf("t0 = %8.8lf ,  evtime = %8.8LF\n",t0,evtime);
+    // std::cout<< "Event time : " << evtime << std::endl;
+    // std::cout<< "Epoch = " << epoch << "  nn (sec) = " << nn * 1e-9<<
+    // std::endl;
 
-    //  cout<<"1 SDD DSF ASDF SADF ASF ASF AS"<<std::endl;
+    double totcharge = 0.; // Initialize total charge accumulator.
+
     /// reset time array in case dt was modified during data taking
-    int ntrigs = 0;
-    int ntrigsNeutrons = 0;
-    //     cout<< "maxpoints = "<< maxpoints << std::endl;
+    int ntrigs = 0; // Total number of pulses/peaks found in the current event
+    int ntrigsNeutrons = 0; // Number of pulses in the current event that pass
+                            // neutron selection cuts
+                            // (amplitude > nTh, charge > nThCh, and cut1)
+
+    // Build time array in nanoseconds (0, dt, 2×dt, 3×dt, ...).
     ptime[0] = 0;
     for (int i = 1; i < maxpoints; i++)
       ptime[i] = ptime[i - 1] + dt;
-    //       cout<<" dt = "<<dt<<std::endl;
+
+    // Sum the baseline-subtracted waveform
+    // Gives positive values for negative pulses
     for (int i = 0; i < maxpoints; i++) {
       totcharge += bslsum - amplSum[i];
     }
-    totcharge /= maxpoints;
-    totcharge *= DT * 1e3; /// make it fC
 
-    int detspark = 0;
+    totcharge /= maxpoints; // Average charge per point (baseline-subtracted)
+    totcharge *= DT * 1e3;  /// make it fC (femtoCoulombs)
 
+    int detspark = 0; // spark event indicator (1 if spark, 0 otherwise)
+
+    // Condition for the spark event: total charge exceeds 200 fC
     if (totcharge > 200.) //|| rmssum> 1.0015)
     {
-      detspark = 1;
-      totNsparks++;
+      detspark = 1; // Mark this event as a spark event
+      totNsparks++; // Increment the total spark event counter
     }
 
+    // Calculate number of points for derivative:
+    // DT (4 ns) / (dt in seconds × 1e9) = points per 4 ns window.
     npt = TMath::FloorNint(DT / (dt * 1e9));
-    //       cout<<"npt = "<<npt<<std::endl;
-    //  return 0;
 
+    // Copy baseline-subtracted waveform for drawing.
     if (draw) {
       for (int i = 0; i < maxpoints; i++) {
         amplC[i] = amplSum[i];
       }
 
+      // Print the event information
       std::cout << "Event " << eventNo << "\t fit1 " << fitstatus1 << " fit2 "
                 << fitstatus2 << " bsl " << bslsum << " rms " << rmssum
                 << " totcharge " << totcharge << std::endl;
       std::cout << endl << "Pulse length = " << maxpoints << std::endl;
+
+      // copy the current event's timestamp for display
       long double epochX = (1. * epoch + nn * 1e-9);
       //	  TTimeStamp *tstamp = new
       // TTimeStamp((time_t)epoch+(rootConv-unixConv),(Int_t)nn);
+
+      // Convert to human-readable time and calculate time since last drawn
+      // event.
       TTimeStamp *tstamp = new TTimeStamp(epochX + (rootConv - unixConv), 0);
       printf("Event time : %s = %10.9Lf  DT = %10.9LF s = %10.7LF ms\n",
              tstamp->AsString("l"), epochX, epochX - drawdt,
              1000. * (epochX - drawdt));
       drawdt = epochX;
 
-      for (int ci = 0; ci < 1; ci++) {
-        ecanv->cd();
-        waveform = new TGraph(maxpoints, ptime, amplC);
-        maxc[ci] = TMath::MaxElement(maxpoints, amplC);
-        minc[ci] = TMath::MinElement(maxpoints, amplC);
-        snprintf(cname, sizeof(cname), "Event %d Waveform C%d\n", evNo, ci + 1);
-        waveform->SetTitle(cname);
-        waveform->SetLineColor(clr[ci]);
-        waveform->SetMarkerColor(clr[ci]);
-        waveform->SetFillColor(0);
-        if (ci == 0) {
-          double fmin = frmin - frmax;
-          // double fmin = frmax-frmin;
-          waveform->GetHistogram()->SetMinimum(-fmin); // set min for better
-                                                       // viewing
-          // waveform->GetHistogram()->SetMinimum(fmin / 2.);
-          std::cout << "Setting minimum at " << frmin - frmax << std::endl;
-          waveform->Draw("apl");
-          // waveform->GetHistogram()->GetYaxis()->SetRangeUser(fmin,-fmin/8.);
-          // waveform->GetHistogram()->GetYaxis()->SetRangeUser(fmin / 2,
-          // -fmin);
-          waveform->GetHistogram()->GetYaxis()->SetRangeUser(fmin,
-                                                             -fmin); // set y
-                                                                     // range
-        } else
-          waveform->Draw("pl");
-        // Set the axis titles even the waveform historam is not used
-        waveform->GetXaxis()->SetTitle("Time [ns]");
-        waveform->GetXaxis()->CenterTitle();
-        waveform->GetYaxis()->SetTitle("Amplitude [V]");
-        waveform->GetYaxis()->CenterTitle();
-        waveform->GetYaxis()->SetTitleOffset(1.1);
+      // for (int ci = 0; ci < 1; ci++) {
+      int ci = 0;  // Only draw channel 1 (C1) for now
+      ecanv->cd(); // change to the event canvas
+      // Create a TGraph for the waveform of the current event
+      waveform = new TGraph(maxpoints, ptime, amplC);
+      // Get the maximum amplitude for setting the y-axis range
+      maxc[ci] = TMath::MaxElement(maxpoints, amplC);
+      // Get the minimum amplitude for setting the y-axis range
+      minc[ci] = TMath::MinElement(maxpoints, amplC);
 
-        // Get the axis maximum values for range setting
-        Double_t y_axis_max = waveform->GetYaxis()->GetXmax();
-        Double_t y_axis_min = waveform->GetYaxis()->GetXmin();
+      // Set the title and axis labels for the waveform graph
+      snprintf(cname, sizeof(cname), "Event %d Waveform C%d\n", eventNo,
+               ci + 1);
+      // Set the title and axis labels for the waveform graph
+      waveform->SetTitle(cname);
+      waveform->SetLineColor(clr[ci]);
+      waveform->SetMarkerColor(clr[ci]);
+      waveform->SetFillColor(0);
+      waveform->Draw("apl"); // Draw the waveform
+      // Set the axis titles even the waveform historam is not used
+      waveform->GetXaxis()->SetTitle("Time [ns]");
+      waveform->GetXaxis()->CenterTitle();
+      waveform->GetYaxis()->SetTitle("Amplitude [V]");
+      waveform->GetYaxis()->CenterTitle();
+      waveform->GetYaxis()->SetTitleOffset(1.1);
 
-        // std::cout <<  "ymax-ymin:  " << y_axis_max << "  " << y_axis_min
-        //           << std::endl;
+      // Get the axis maximum values for range setting
+      Double_t y_axis_max = waveform->GetYaxis()->GetXmax();
+      Double_t y_axis_min = waveform->GetYaxis()->GetXmin();
+      waveform->GetYaxis()->SetRangeUser(y_axis_min * 2.0, y_axis_max * 2.0);
 
-        waveform->GetYaxis()->SetRangeUser(y_axis_min - 0.1, y_axis_max + 0.1);
-        //-----------------------------------------------------//
-        //---- Calculate and display peak and time at peak -----//
-        //-----------------------------------------------------//
+      //-----------------------------------------------------//
+      //---- Calculate and display peak and time at peak -----//
+      //-----------------------------------------------------//
 
-        // Calculate the peak and the mean value for the waveform
-        Double_t x_at_max = 0;
-        double maxY = -1e18; // Initialize with a very small number
-        Double_t current_x, current_y;
+      // Calculate the peak and the mean value for the waveform
+      Double_t x_at_max = 0;
+      Int_t i_index = 0;
+      Double_t maxY = 0.;
+      Double_t current_x = 0., current_y = 0.;
+      // Loop through all points in the graph
+      for (int i = 0; i < waveform->GetN(); ++i) {
+        waveform->GetPoint(i, current_x,
+                           current_y); // Get X and Y for point i
+
+        if (polarity > 0) // for positive pulses
+        {
+          if (current_y > maxY) { // Look for the maximum positive peak
+            maxY = current_y;
+            x_at_max = current_x;
+            i_index = i;
+          }
+        } else // for negative pulses
+        {
+          if (current_y < maxY) { // Look for the maximum negative peak
+            maxY = current_y;
+            x_at_max = current_x;
+            i_index = i;
+          }
+        }
+      }
+
+      // Print the peak amplitude and time at peak to the console
+      if (polarity > 0) // for positive pulses
+      {
+        std::cout << "Peak amplitude (positive): " << maxY << " V at time "
+                  << x_at_max << " ns" << std::endl;
+      } else // for negative pulses
+      {
+        std::cout << "Peak amplitude (negative): " << maxY << " V at time "
+                  << x_at_max << " ns" << std::endl;
+      }
+      // Create stringstream to format the text
+      std::stringstream ss, ss_2;
+      ss << "Peak: [" << setprecision(3) << maxY * 1000. << " mV, " << x_at_max
+         << " ns]";
+
+      // Create TLatex to draw the text on the canvas
+      TLatex l;
+      l.SetNDC(kTRUE);
+      l.SetTextColor(kRed);
+      l.DrawLatex(0.25, 0.86, ss.str().c_str());
+      ecanv->Modified();
+      ecanv->Update();
+      gSystem->ProcessEvents(); // Force ROOT to process GUI events
+      gSystem->Sleep(100);      // Give it a moment to refresh
+
+      // Update the canvases
+      // ecanv->Update();
+      dcanv->Update();
+      icanv->Update();
+
+      std::cout << "Interact with canvas. Press 'q' to save and continue..."
+                << std::endl;
+      ecanv->WaitPrimitive(); // User interacts, presses 'q' when done
+
+      ecanv->SaveAs(
+          Form("%s/Event_WaveForms/S%03d-%02d-%d-%d/Waveform_Event%04d.png",
+               WORKDIR, detNo, runNo, vm, vd, eventNo));
+
+      //-----------------------------------------------------//
+
+      // Calculates and draws the derivative of the waveform (rate of change).
+      dcanv->cd();
+      DerivateArray(amplC, dampl, maxpoints, dt, npt * 4, 1);
+      derivative = new TGraph(maxpoints, ptime, dampl);
+      derivative->SetMarkerColor(clr[ci]);
+      derivative->SetLineColor(clr[ci]);
+      derivative->SetFillColor(0);
+      snprintf(cname, sizeof(cname), "Derivative C%d\n", ci + 1);
+      derivative->SetTitle(cname);
+      // if (ci == 0) {
+      derivative->Draw("apl");
+      // derivative->SetMaximum(0.02);
+      // derivative->SetMinimum(-0.02);
+      // } else
+      //   derivative->Draw("pl");
+
+      ///  Derivate smoothed signals for analysis
+      SmoothArray(amplC, samplC, maxpoints, 2, inverse);
+      DerivateArray(samplC, dsampl, maxpoints, dt, npt * 4, 1);
+      TGraph *graph22 = new TGraph(maxpoints, ptime, dsampl);
+      graph22->SetMarkerColor(clr[ci + 4]);
+      graph22->SetLineColor(clr[ci + 4]);
+      graph22->SetLineWidth(2);
+      graph22->SetFillColor(0);
+      snprintf(cname, sizeof(cname), "Smoothed Derivative C%d\n", ci + 1);
+      graph22->SetTitle(cname);
+      graph22->Draw("pl");
+      dcanv->Modified();
+      dcanv->Update();
+
+      // Calculates integral of the derivative (which gives back the original
+      // signal) with 20 ns integration window.
+      icanv->cd();
+      double intgr = IntegrateA(maxpoints, dsampl, idamplC, dt);
+      int nint = 20;
+      intgr = IntegratePulse(maxpoints, idamplC, iampl, dt, nint * dt);
+      // continue;
+      maxd[ci] = TMath::MaxElement(maxpoints, iampl);
+      mind[ci] = TMath::MinElement(maxpoints, iampl);
+      integralh = new TGraph(maxpoints, ptime, iampl);
+      integralh->SetMarkerColor(clr[ci + 4]);
+      integralh->SetLineColor(clr[ci + 4]);
+      integralh->SetFillColor(0);
+      snprintf(cname, sizeof(cname), "Integral %g of C%d\n", nint * dt, ci + 1);
+      integralh->SetTitle(cname);
+      // if (ci == 0) {
+      integralh->Draw("apl");
+      // } else
+      //   integralh->Draw("pl");
+      icanv->Modified();
+      icanv->Update();
+
+      icanv->cd();
+      //      intgr = IntegratePulse(maxpoints,amplC[ci],iampl,dt,50.);
+      nint = N_INTEGRATION_POINTS;
+      intgr = IntegratePulse(maxpoints, idamplC, iampl, dt, nint * dt);
+      graph22 = new TGraph(maxpoints, ptime, iampl);
+      graph22->SetMarkerColor(clr[ci + 8]);
+      graph22->SetLineColor(clr[ci + 8]);
+      graph22->SetFillColor(0);
+      snprintf(cname, sizeof(cname), "Integral %g of C%d\n", nint * dt, ci + 1);
+      graph22->SetTitle(cname);
+      graph22->Draw("pl");
+
+      nint = 2;
+      intgr = IntegratePulse(maxpoints, idamplC, iampl, dt, nint * dt);
+      graph22 = new TGraph(maxpoints, ptime, iampl);
+      graph22->SetMarkerColor(clr[ci + 12]);
+      graph22->SetLineColor(clr[ci + 12]);
+      graph22->SetFillColor(0);
+      snprintf(cname, sizeof(cname), "Integral %g of C%d\n", nint * dt, ci + 1);
+      graph22->SetTitle(cname);
+      graph22->Draw("pl");
+      ecanv->Modified();
+      ecanv->Update();
+
+      //-----------------------------------------------------//
+      //---- Write waveform data to text file ---------------//
+      //-----------------------------------------------------//
+      //--Altingun--//
+      if (saveWF) {
+        ofstream WaveForm_txt;
+        WaveForm_txt.open(
+            Form("%s/Event_WaveForms/S%03d-%02d-%d-%d/Waveform_Event%04d.txt",
+                 WORKDIR, detNo, runNo, vm, vd, eventNo));
+        WaveForm_txt << "Time \t Amplitude\n";
+
         // Loop through all points in the graph
         for (int i = 0; i < waveform->GetN(); ++i) {
           waveform->GetPoint(i, current_x,
                              current_y); // Get X and Y for point i
-          if (current_y > maxY) {
-            maxY = current_y;
-            x_at_max = current_x;
-          }
+          WaveForm_txt << current_x << "\t" << current_y
+                       << "\n"; // write to file
         }
-        // Create stringstream to format the text Altingun
-        std::stringstream ss, ss_2;
-        ss << "Peak: [" << setprecision(3) << maxY * 1000. << " mV, "
-           << x_at_max << " ns]";
-        // ss_2 << "t[Peak]: " << setprecision(3) << x_at_max << " ns";
-
-        // Create TLatex to draw the text on the canvas Altingun
-        TLatex l;
-        l.SetNDC(kTRUE);
-        l.SetTextColor(kRed);
-        l.DrawLatex(0.25, 0.86, ss.str().c_str());
-
-        // TLatex l_2;
-        // l_2.SetNDC(kTRUE);
-        // l_2.SetTextColor(kRed);
-        // l_2.DrawLatex(0.2, 0.75, ss_2.str().c_str());
-
-        ecanv->Modified();
-        ecanv->Update();
-        // Altingun
-        // ecanv->SaveAs(Form("%s/Event_WaveForms/ESTIA_spare2_tube_tests_overnight_770V/Waveform_Event%04d.png",WORKDIR,
-        // eventNo));
-        ecanv->SaveAs(
-            Form("%s/Event_WaveForms/S%03d-%02d-%d-%d/Waveform_Event%04d.png",
-                 WORKDIR, detNo, runNo, vm, vd, eventNo));
-
-        //-----------------------------------------------------//
-
-        //-----------------------------------------------------//
-        //---- Write waveform data to text file ---------------//
-        //-----------------------------------------------------//
-        //--Altingun--//
-        if (saveWF) {
-          ofstream myfile;
-          myfile.open(
-              Form("%s/Event_WaveForms/S%03d-%02d-%d-%d/Waveform_Event%04d.txt",
-                   WORKDIR, detNo, runNo, vm, vd, eventNo));
-          myfile << "Time \t Amplitude\n";
-
-          // Loop through all points in the graph
-          for (int i = 0; i < waveform->GetN(); ++i) {
-            waveform->GetPoint(i, current_x,
-                               current_y); // Get X and Y for point i
-            myfile << current_x << "\t" << current_y << "\n"; // write to file
-          }
-          // for (int i = 0; i < sizeof(*ptime) / sizeof(*ptime[0]); i++) {
-          //   double a = ptime[i];
-          //   double b = amplC[i];
-          //   myfile << a << "\t" << b << "\n"; // write to file
-          // }
-          myfile.close();
-        }
-        //-----------------------------------------------------//
-        //      continue;
-
-        ///  Smoothing array when no "bit filter" !!!!
-
-        dcanv->cd();
-        DerivateArray(amplC, dampl, maxpoints, dt, npt * 4, 1);
-        derivative = new TGraph(maxpoints, ptime, dampl);
-        derivative->SetMarkerColor(clr[ci]);
-        derivative->SetLineColor(clr[ci]);
-        derivative->SetFillColor(0);
-        snprintf(cname, sizeof(cname), "Derivative C%d\n", ci + 1);
-        derivative->SetTitle(cname);
-        if (ci == 0) {
-          derivative->Draw("apl");
-          derivative->SetMaximum(0.02);
-          derivative->SetMinimum(-0.02);
-        } else
-          derivative->Draw("pl");
-
-        ///  Derivate smoothed signals for analysis  (may not me used...)
-        SmoothArray(amplC, samplC, maxpoints, 2, inverse);
-        DerivateArray(samplC, dsampl, maxpoints, dt, npt * 4, 1);
-        TGraph *graph22 = new TGraph(maxpoints, ptime, dsampl);
-        graph22->SetMarkerColor(clr[ci + 4]);
-        graph22->SetLineColor(clr[ci + 4]);
-        graph22->SetLineWidth(2);
-        graph22->SetFillColor(0);
-        snprintf(cname, sizeof(cname), "Smoothed Derivative C%d\n", ci + 1);
-        graph22->SetTitle(cname);
-        graph22->Draw("pl");
-        dcanv->Modified();
-        dcanv->Update();
-
-        icanv->cd();
-        double intgr = IntegrateA(maxpoints, dsampl, idamplC, dt);
-        int nint = 20;
-        intgr = IntegratePulse(maxpoints, idamplC, iampl, dt, nint * dt);
-        // continue;
-        maxd[ci] = TMath::MaxElement(maxpoints, iampl);
-        mind[ci] = TMath::MinElement(maxpoints, iampl);
-        integralh = new TGraph(maxpoints, ptime, iampl);
-        integralh->SetMarkerColor(clr[ci + 4]);
-        integralh->SetLineColor(clr[ci + 4]);
-        integralh->SetFillColor(0);
-        snprintf(cname, sizeof(cname), "Integral %g of C%d\n", nint * dt,
-                 ci + 1);
-        integralh->SetTitle(cname);
-        if (ci == 0) {
-          integralh->Draw("apl");
-        } else
-          integralh->Draw("pl");
-        icanv->Modified();
-        icanv->Update();
-
-        icanv->cd();
-        //      intgr = IntegratePulse(maxpoints,amplC[ci],iampl,dt,50.);
-        nint = N_INTEGRATION_POINTS;
-        intgr = IntegratePulse(maxpoints, idamplC, iampl, dt, nint * dt);
-        graph22 = new TGraph(maxpoints, ptime, iampl);
-        graph22->SetMarkerColor(clr[ci + 8]);
-        graph22->SetLineColor(clr[ci + 8]);
-        graph22->SetFillColor(0);
-        snprintf(cname, sizeof(cname), "Integral %g of C%d\n", nint * dt,
-                 ci + 1);
-        graph22->SetTitle(cname);
-        graph22->Draw("pl");
-
-        nint = 2;
-        intgr = IntegratePulse(maxpoints, idamplC, iampl, dt, nint * dt);
-        graph22 = new TGraph(maxpoints, ptime, iampl);
-        graph22->SetMarkerColor(clr[ci + 12]);
-        graph22->SetLineColor(clr[ci + 12]);
-        graph22->SetFillColor(0);
-        snprintf(cname, sizeof(cname), "Integral %g of C%d\n", nint * dt,
-                 ci + 1);
-        graph22->SetTitle(cname);
-        graph22->Draw("pl");
-        ecanv->Modified();
-        ecanv->Update();
+        // for (int i = 0; i < sizeof(*ptime) / sizeof(*ptime[0]); i++) {
+        //   double a = ptime[i];
+        //   double b = amplC[i];
+        //   WaveForm_txt << a << "\t" << b << "\n"; // write to file
+        // }
+        WaveForm_txt.close();
       }
-    } // end (if(draw)
 
-    //       cout<<"2 SDD DSF ASDF SADF ASF ASF AS"<<std::endl;
-    ///  subtract baseline it is done during the creation of the tree
-    //       cout<<"maxpoints = "<<maxpoints<<"  bslsum = "<<bslsum<<std::endl;
+      // } // End of loop over channels (ci)
+    } // end (if (draw)
+    //******************************************************************************************//
+
+    // Subtract baseline it is done during the creation of the tree
     for (int i = 0; i < maxpoints; i++)
       amplSum[i] -= bslsum;
     /// smooth sumn array for analysis
-    //       cout<<"2 SDD DSF ASDF SADF ASF ASF AS"<<std::endl;
     SmoothArray(amplSum, sampl, maxpoints, 3, inverse);
-    //       cout<<"3 SDD DSF ASDF SADF ASF ASF AS"<<std::endl;
     /// derivate sum array
     DerivateArray(amplSum, dsampl, maxpoints, dt, npt, 1);
 
-    //       cout<<"4 SDD DSF ASDF SADF ASF ASF AS"<<std::endl;
-
-    int ti = 0;
-    int itrig = 0;
-    double t10corrected = 0.;
-    ntrigs = 0;
-    ntrigsNeutrons = 0;
-    int correlated = 0;
-    itrig = itrigger;
+    int ti = 0;               // Current time index in waveform
+    int itrig = 0;            // Trigger index (from external trigger)
+    double t10corrected = 0.; // Time at 10% (corrected for trigger)
+    ntrigs = 0;               // Total pulses in this event
+    ntrigsNeutrons = 0;       // Neutron candidates in this event
+    int correlated = 0;       // Whether pulse is correlated with trigger
+    itrig = itrigger;         // Get trigger position from tree
     if (itrig > 0)
-      correlated = 1;
+      correlated = 1; // If trigger exists, pulses are "correlated"
     //      correlated = bkg;
 
     /// Having the following "if (detspark)" here means that an event with a
@@ -1297,10 +1442,12 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
       eventNo++;
       continue;
     }
-
     while (ti < maxpoints - 50 && ntrigs < MAXTRIG) {
-      // cout<<"check: "<<ntrigs+1<<std::endl;
+
       ti = AnalyseLongPulse(maxpoints, sampl, dsampl, ipar, threshold, dt, ti);
+      // std::cout << maxpoints << " points in event " << eventNo << "  " <<
+      // ntrigs
+      //           << " triggers found,  ti: " << ti << std::endl;
       if (ti < 0)
         break;
       // 	  std::cout << "Found trig at "<<ti*dt<< "  "<< ti<< "
@@ -1364,6 +1511,21 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
       BSLch = spar[ntrigs].charge - spar[ntrigs].bslch;
 
       otree->Fill();
+
+      std::cout << "Event " << eventNo // Event number
+                << "  Trigger "
+                << ntrigs // Which pulse in this event (1st, 2nd, etc.)
+                << "  t10 = " << spar[ntrigs].t10 // Sample index at 10% of peak
+                << "  t90 = " << spar[ntrigs].t90 // Sample index at 90% of peak
+                << "  tb10 = "
+                << spar[ntrigs].tb10 // Sample index at 10% on falling edge
+                << "  ampl = " << spar[ntrigs].ampl // Peak amplitude [V]
+                << "  charge = "
+                << spar[ntrigs].charge // Integrated charge [V·ns]
+                << "  width = " << spar[ntrigs].width // Pulse width in samples
+                << "  tot = " << spar[ntrigs].tot
+                << std::endl; // Time-over-threshold in samples
+
       // //-----------------------------
       // //doubling histos for nthreshold
       if ((spar[ntrigs].ampl) > (nTh) && (spar[ntrigs].charge) > (nThCh) &&
@@ -1425,6 +1587,10 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
         continue;
       }
     }
+
+    std::cout << "Event " << eventNo << "  npeaks = " << npeaks
+              << "  npeaksNeutrons = " << npeaksNeutrons
+              << "  evtime = " << evtime - epochS << std::endl;
 
     double ts = ptime[0];             // ns
     double tf = ptime[maxpoints - 1]; // ns
@@ -1581,7 +1747,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
         icanv->Update();
       }
     }
-    //---------------end if(draw)--------------------------------
+    //---------------end if (draw)--------------------------------
 
     if (ntrigs > 20000) {
       std::cout << ntrigs << " pulses in event " << eventNo << std::endl;
@@ -1596,7 +1762,11 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     }
 
     eventNo++;
-  } // end of while (eventNo<nevents)
+  }
+  // End of while (eventNo < nevents)
+  //******************************************************************************************//
+
+  //******************************************************************************************//
 
   if (draw) {
     gSystem->ChangeDirectory(tmpdir);

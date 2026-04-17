@@ -1312,7 +1312,7 @@ int SubtractMaxChannel(int points,double** data, double* sampl, double* bsl, int
     return -1;
   }
 //   cout<<"points  = "<<points<<endl;
-  double max;  
+  double max = -1000.;  
   for (int i=0;i<points;i++)
   {
     max = -1000.;
@@ -1593,6 +1593,24 @@ int AnalyseLongPulse(int points, double* data, double* drv, IPARAM *par, double 
 //   cout<<"charge = "<<par->charge*dt/N_INTEGRATION_POINTS<<endl;
 //   cout<<"risecharge = "<<par->risecharge*dt/N_INTEGRATION_POINTS<<endl;
   return (par->ftime);
+
+  // Amplitude: 0 V ─────────────────────────────────────────────────────────
+  //                   '\'                                  
+  //                    '\'                                 
+  //                     '\' ← t10 (10% on rising edge)      
+  //                      '\'                               
+  //                       '\'                              
+  //                        '\' ← t90 (90% on rising edge)   
+  //                         '\'                            
+  //                          '\'                           
+  //                           '\' ← Peak (100%)            
+  //                            '\'                         
+  //                             '\'                        
+  //                              '\' ← tb10 (10% on falling edge)
+  //                               '\'                      
+  //                                '\'                     
+  //                                 '\' ← Returns to baseline
+  //                                  ────────────────────
 }
 
 void AddPar(IPARAM* ipar, IPARAM* spar, double dt)
