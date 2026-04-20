@@ -60,7 +60,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
                           int exttrig = 0, int nRun = 1, int bkg = 0,
                           string filetype = "") {
   gROOT->LoadMacro("MyFunctions.C");
-
+  gROOT->SetBatch(kFALSE);
   int inverse = 1;
 
   char particle[20];
@@ -1077,15 +1077,15 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     // Create canvases with explicit size and make them visible
     ecanv = new TCanvas("EventDisplay", "Event display", 800, 600);
     ecanv->SetWindowPosition(100, 100); // Position on screen
-    ecanv->Draw();                      // Force display
+    // ecanv->Draw();                      // Force display
 
     dcanv = new TCanvas("DerivativeDisplay", "Derivative display", 800, 600);
     dcanv->SetWindowPosition(900, 100);
-    dcanv->Draw();
+    // dcanv->Draw();
 
     icanv = new TCanvas("IntegralDisplay", "Integral display", 800, 600);
     icanv->SetWindowPosition(100, 700);
-    icanv->Draw();
+    // icanv->Draw();
 
     // Process ROOT events to ensure windows appear
     gSystem->ProcessEvents();
@@ -1206,6 +1206,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
              1000. * (epochX - drawdt));
       drawdt = epochX;
 
+      // ========== DRAW WAVEFORM CANVAS ==========
       // for (int ci = 0; ci < 1; ci++) {
       int ci = 0;  // Only draw channel 1 (C1) for now
       ecanv->cd(); // change to the event canvas
@@ -1293,21 +1294,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
       gSystem->ProcessEvents(); // Force ROOT to process GUI events
       gSystem->Sleep(100);      // Give it a moment to refresh
 
-      // Update the canvases
-      // ecanv->Update();
-      dcanv->Update();
-      icanv->Update();
-
-      std::cout << "Interact with canvas. Press 'q' to save and continue..."
-                << std::endl;
-      ecanv->WaitPrimitive(); // User interacts, presses 'q' when done
-
-      ecanv->SaveAs(
-          Form("%s/Event_WaveForms/S%03d-%02d-%d-%d/Waveform_Event%04d.png",
-               WORKDIR, detNo, runNo, vm, vd, eventNo));
-
-      //-----------------------------------------------------//
-
+      // ========== DRAW DERIVATIVE CANVAS ==========
       // Calculates and draws the derivative of the waveform (rate of change).
       dcanv->cd();
       DerivateArray(amplC, dampl, maxpoints, dt, npt * 4, 1);
@@ -1338,6 +1325,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
       dcanv->Modified();
       dcanv->Update();
 
+      // ========== DRAW INTEGRAL CANVAS ==========
       // Calculates integral of the derivative (which gives back the original
       // signal) with 20 ns integration window.
       icanv->cd();
@@ -1353,14 +1341,9 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
       integralh->SetFillColor(0);
       snprintf(cname, sizeof(cname), "Integral %g of C%d\n", nint * dt, ci + 1);
       integralh->SetTitle(cname);
-      // if (ci == 0) {
       integralh->Draw("apl");
-      // } else
-      //   integralh->Draw("pl");
-      icanv->Modified();
-      icanv->Update();
 
-      icanv->cd();
+      // ecanv->cd();
       //      intgr = IntegratePulse(maxpoints,amplC[ci],iampl,dt,50.);
       nint = N_INTEGRATION_POINTS;
       intgr = IntegratePulse(maxpoints, idamplC, iampl, dt, nint * dt);
@@ -1381,13 +1364,40 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
       snprintf(cname, sizeof(cname), "Integral %g of C%d\n", nint * dt, ci + 1);
       graph22->SetTitle(cname);
       graph22->Draw("pl");
-      ecanv->Modified();
+      icanv->Modified();
+      icanv->Update();
+
+      // ========== NOW WAIT FOR USER INTERACTION ==========
+      // Force all canvases to refresh
       ecanv->Update();
+      dcanv->Update();
+      icanv->Update();
+      gSystem->ProcessEvents();
+
+      std::cout << "\n========================================" << std::endl;
+      std::cout << "Interact with the canvases!" << std::endl;
+      std::cout << "Press ENTER in the TERMINAL (not on canvas) when done..."
+                << std::endl;
+      std::cout << "========================================" << std::endl;
+
+      // THIS IS THE KEY - Keep ROOT's event loop running
+      // The program will stay here until canvases are closed
+      // gApplication->Run();
+      // This enters ROOT's native event loop
+      // The canvases will be fully interactive
+      // gApplication->Run();
+
+      ecanv->WaitPrimitive();
+    
+
+      // Saving the plots after user interaction
+      ecanv->SaveAs(
+          Form("%s/Event_WaveForms/S%03d-%02d-%d-%d/Waveform_Event%04d.png",
+               WORKDIR, detNo, runNo, vm, vd, eventNo));
 
       //-----------------------------------------------------//
       //---- Write waveform data to text file ---------------//
       //-----------------------------------------------------//
-      //--Altingun--//
       if (saveWF) {
         ofstream WaveForm_txt;
         WaveForm_txt.open(
