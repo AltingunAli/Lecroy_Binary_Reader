@@ -317,6 +317,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   double *amplC;
   //   for (int i=0; i<2; i++)
   amplC = new double[ARRAYSIZE];
+  std::vector<double> amplDistribution;
 
   double *samplC;
   //   for (int i=0; i<2; i++)
@@ -715,7 +716,6 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     longpulse = 0;
     rmax = (int)(5 * exprate * timebinwidth);
     rbins = rmax;
-
   } else {            // for long frames
     tmax = 1. / 200.; // Delta-T max = 0.005 seconds
     rmax = 2000;      // Rate max = 2000
@@ -976,8 +976,8 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   //******************************************************************************************//
   ///  Correlation plots
   double chovamax = 2000.;
-  if (dv <= 50 || vm > 490)
-    chovamax = 800.;
+  // if (dv <= 50 || vm > 490)
+    // chovamax = 800.;
 
   snprintf(htitle, sizeof(htitle), "Charge over Amplitude");
   snprintf(hname, sizeof(hname), "S%03d_run%02d_Charge_ov_Amplitude_%s", detNo,
@@ -1063,15 +1063,14 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   TGraph *waveform = nullptr;
   TGraph *derivative = nullptr;
   TGraph *integralh = nullptr;
-  TH1D *hWaveformAmpl =
-      nullptr; // For storing the amplitude of the waveform for the drawn event
+  TH1D *hWaveformAmpl = nullptr; // For storing the amplitude of the waveform
   // Name for the graphs
   char cname[100];
-
   // At the beginning of the function, before the event loop:
   TCanvas *ecanv = nullptr;
   TCanvas *dcanv = nullptr;
   TCanvas *icanv = nullptr;
+  TCanvas *acanv = nullptr;
 
   if (draw) {
     // Create canvases with explicit size and make them visible
@@ -1086,6 +1085,10 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
     icanv = new TCanvas("IntegralDisplay", "Integral display", 800, 600);
     icanv->SetWindowPosition(100, 700);
     // icanv->Draw();
+
+    acanv = new TCanvas("Amplitude Distribution", "Amplitude Distribution", 800,
+                        600);
+    acanv->SetWindowPosition(900, 700);
 
     // Process ROOT events to ensure windows appear
     gSystem->ProcessEvents();
@@ -1183,9 +1186,353 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
     // Copy baseline-subtracted waveform for drawing.
     if (draw) {
+
+      int ci = 0; // Only draw channel 1 (C1) for now
+
       for (int i = 0; i < maxpoints; i++) {
         amplC[i] = amplSum[i];
       }
+
+      //---------------------------------------------------------------------------------------------------------------//
+      if (polarity < 0) // for negative pulses
+      {
+        // Find minimum amplitude
+        double *minPtr = std::min_element(amplC, amplC + maxpoints);
+        double minValue = *minPtr;
+        // int minIndex = minPtr - amplC;
+
+        // Title for the hWaveformAmpl histogram
+        snprintf(fname2, sizeof(fname2), "S%03d_run%02d_Event%d_Amplitude_%s",
+                 detNo, runNo, eventNo, ftype);
+
+        // histogram bin
+        int histbin = 0;
+        double range_value = 0.;
+        double maxrange = 0., minrange = 0.;
+
+        // If the minimum value is less than greater than -50 mV
+        // then use 1 mV of binning
+        // else use 10 mV of binning
+        if (minValue * 1E3 > -50.) {
+          range_value = ceil(abs(minValue * 1E3));
+          maxrange = -(double)range_value;
+          histbin = ceil(abs(minValue * 1E2)) *
+                    10; // multiplying by 10 to get mV (in ceil it
+                        // is already multiplied by 1e2
+        } else {
+          range_value = ceil(abs(minValue * 1E2));
+          range_value =
+              range_value * 10.;      // multiplying by 10 to get mV (in ceil
+                                      // it is already multiplied by 1e2)
+          histbin = range_value / 10; // Add some margin
+          maxrange = -(double)range_value;
+        }
+        std::cout << "Minimum amplitude in the frame: " << minValue * 1E3
+                  << " mV" << std::endl;
+        // std::cout << "histbin = " << histbin << std::endl;
+
+        hWaveformAmpl =
+            new TH1D("WaveformAmpl", fname2, histbin, -(double)histbin, 0.);
+
+        int ci = 0; // Only draw channel 1 (C1) for now
+
+        // Set the histogram parameters
+        hWaveformAmpl->GetXaxis()->SetTitle("Amplitude [mV]");
+        hWaveformAmpl->GetXaxis()->CenterTitle();
+        hWaveformAmpl->GetYaxis()->SetTitle("Counts");
+        hWaveformAmpl->GetYaxis()->CenterTitle();
+        hWaveformAmpl->SetTitle(cname);
+        hWaveformAmpl->SetLineColor(clr[ci]);
+        hWaveformAmpl->SetMarkerColor(clr[ci]);
+        hWaveformAmpl->SetFillColor(0);
+
+        // Maximum points for noise and threshold determination
+        // Get the first parts of the frame to analyse the data
+        // according to the total size of the frame
+        int mpoints = 0.;
+        if (maxpoints < 5E5)
+          mpoints = maxpoints * 4E-1;
+        if (maxpoints > 5E5 && maxpoints < 1E6)
+          mpoints = mpoints * 1E-1;
+        if (maxpoints > 1E6 && maxpoints < 5E6)
+          mpoints = maxpoints * 1E-2;
+        if (maxpoints > 5E6)
+          mpoints = maxpoints * 1E-3;
+
+        // Fill the hWaveformAmpl histogram
+        for (int i = 0; i < mpoints; i++) {
+          // if (amplC[i] <= minValue * 0.05) {
+          hWaveformAmpl->Fill(amplC[i] * 1e3); // Fill with amplitude in mV
+          // }
+        }
+
+        // Save the bin contents of the histogram for further analysis
+        std::vector<int> binContents; // Vector to store bin counts
+
+        for (int i = 0; i < histbin; i++) {
+          double binCount =
+              hWaveformAmpl->GetBinContent(i + 1); // Number of entries in bin
+          double binCenter =
+              hWaveformAmpl->GetBinCenter(i + 1); // X-value at bin center
+          // std::cout << "Bin " << i + 1 << ": Center = " << binCenter << " mV"
+          //           << ", Count = " << binCount << std::endl;
+          binContents.push_back(binCount); // Store the count in the vector
+        }
+
+        // use the first bin as a base index to calculate the reduction of the
+        // counts in bins in percentage
+        int bin_index = binContents.size() - 1;
+
+        // Loop over all bins and determine if there are empty bins and ignore
+        // them
+        for (int i = binContents.size() - 1; i > 0; i--) {
+          if (binContents[i] == 0) {
+            bin_index = i - 1; // Use the next bin for normalization if the
+            // current bin is empty
+          } else {
+            break;
+          }
+        }
+
+        // Inspect the bin contents of the wave amplitude histogram
+        // for better understanding of the noise level, gamma signals and the
+        // neutron relates signals
+
+        // // Print the info
+        // std::cout << "Using bin " << bin_index << "a s the base index!"
+        //           << std::endl;
+        // std::cout << std::endl;
+
+        // Print the info
+        // It will print the decrease in a bin with respect to the previous one
+        std::cout << "Bin counts relative to the first bin:" << std::endl;
+        for (int i = binContents.size() - 1; i > 0; i--) {
+          double relativeCount = 0.0;
+          // if (binContents[i] == 0) {
+          //   // current bin is empty
+          //   continue; // Skip this bin if it has zero count to avoid division
+          //   by
+          //             // zero
+          // } else {
+
+          if (i == binContents.size() - 1) {
+            relativeCount = static_cast<double>(binContents[i]) /
+                            binContents[i]; // Relative count compared
+            // to the next bin
+            std::cout << "Bin " << binContents.size() - i
+                      << ": Center = " << hWaveformAmpl->GetBinCenter(i + 1)
+                      << " mV"
+                      << ", Count = " << binContents[i]
+                      << ", Base Count = " << relativeCount << " % | First Bin"
+                      << std::endl;
+          } else if (i != binContents.size() - 1 && binContents[i + 1] == 0) {
+            relativeCount = static_cast<double>(binContents[i]) /
+                            binContents[i]; // Relative count compared
+            // to the next bin
+            std::cout << "Bin " << binContents.size() - i
+                      << ": Center = " << hWaveformAmpl->GetBinCenter(i + 1)
+                      << " mV"
+                      << ", Count = " << binContents[i]
+                      << ", Relative Count = " << 0 << " % | Zero Bin"
+                      << std::endl;
+
+          } else if (i != binContents.size() - 1 && binContents[i + 1] != 0) {
+            // relativeCount = static_cast<double>(binContents[i]) /
+            //                 binContents[i + 1]; // Relative count compared
+            relativeCount =
+                binContents[i] /
+                static_cast<double>(
+                    binContents[bin_index]); // Relative count compared
+            // to the next bin
+            std::cout << "Bin " << binContents.size() - i
+                      << ": Center = " << hWaveformAmpl->GetBinCenter(i + 1)
+                      << " mV"
+                      << ", Count = "
+                      << binContents[i]
+                      // << ", Relative Count = " << relativeCount * 100. << "
+                      // % " << binContents[i + 1] << " / " << binContents[i]
+                      << ", Relative Decrease = " << relativeCount * 100.
+                      << " % " << std::endl;
+          }
+          // }
+        }
+        std::cout << std::endl;
+      }
+      //---------------------------------------------------------------------------------------------------------------//
+
+      //---------------------------------------------------------------------------------------------------------------//
+      if (polarity > 0) // for poositive pulses
+      {
+
+        // Find minimum amplitude
+        double *maxPtr = std::min_element(amplC, amplC + maxpoints);
+        double maxValue = *maxPtr;
+        // int minIndex = maxPtr - amplC;
+
+        // Title for the hWaveformAmpl histogram
+        snprintf(fname2, sizeof(fname2), "S%03d_run%02d_Event%d_Amplitude_%s",
+                 detNo, runNo, eventNo, ftype);
+
+        // histogram bin
+        int histbin = 0;
+        double range_value = 0.;
+        double maxrange = 0., minrange = 0.;
+
+        // If the minimum value is less than smaller than 50 mV
+        // then use 1 mV of binning
+        // else use 10 mV of binning
+        if (maxValue * 1E3 < 50.) {
+          range_value = ceil(abs(maxValue * 1E3));
+          maxrange = (double)range_value;
+          histbin = ceil(abs(maxValue * 1E2)) *
+                    10; // multiplying by 10 to get mV (in ceil it
+                        // is already multiplied by 1e2
+        } else {
+          range_value = ceil(abs(maxValue * 1E2));
+          range_value =
+              range_value * 10.;      // multiplying by 10 to get mV (in ceil
+                                      // it is already multiplied by 1e2)
+          histbin = range_value / 10; // Add some margin
+          maxrange = (double)range_value;
+        }
+        std::cout << "Maximum amplitude in the frame: " << maxValue * 1E3
+                  << " mV" << std::endl;
+        // std::cout << "Total bin bumber = " << histbin << std::endl;
+
+        hWaveformAmpl =
+            new TH1D("WaveformAmpl", fname2, histbin, (double)histbin, 0.);
+
+        int ci = 0; // Only draw channel 1 (C1) for now
+
+        // Set the histogram parameters
+        hWaveformAmpl->GetXaxis()->SetTitle("Amplitude [mV]");
+        hWaveformAmpl->GetXaxis()->CenterTitle();
+        hWaveformAmpl->GetYaxis()->SetTitle("Counts");
+        hWaveformAmpl->GetYaxis()->CenterTitle();
+        hWaveformAmpl->SetTitle(cname);
+        hWaveformAmpl->SetLineColor(clr[ci]);
+        hWaveformAmpl->SetMarkerColor(clr[ci]);
+        hWaveformAmpl->SetFillColor(0);
+
+        // Maximum points for noise and threshold determination
+        // Get the first parts of the frame to analyse the data
+        // according to the total size of the frame
+        int mpoints = 0.;
+        if (maxpoints < 5E5)
+          mpoints = maxpoints * 4E-1;
+        if (maxpoints > 5E5 && maxpoints < 1E6)
+          mpoints = mpoints * 1E-1;
+        if (maxpoints > 1E6 && maxpoints < 5E6)
+          mpoints = maxpoints * 1E-2;
+        if (maxpoints > 5E6)
+          mpoints = maxpoints * 1E-3;
+
+        // Fill the hWaveformAmpl histogram
+        for (int i = 0; i < mpoints; i++) {
+          // if (amplC[i] <= maxValue * 0.05) {
+          hWaveformAmpl->Fill(amplC[i] * 1e3); // Fill with amplitude in mV
+          // }
+        }
+
+        // Save the bin contents of the histogram for further analysis
+        std::vector<int> binContents; // Vector to store bin counts
+
+        for (int i = 0; i < histbin; i++) {
+          double binCount =
+              hWaveformAmpl->GetBinContent(i + 1); // Number of entries in bin
+          double binCenter =
+              hWaveformAmpl->GetBinCenter(i + 1); // X-value at bin center
+          // std::cout << "Bin " << i + 1 << ": Center = " << binCenter << " mV"
+          //           << ", Count = " << binCount << std::endl;
+          binContents.push_back(binCount); // Store the count in the vector
+        }
+
+        // use the first bin as a base index to calculate the reduction of the
+        // counts in bins in percentage
+        int bin_index = 0;
+
+        // Loop over all bins and determine if there are empty bins and ignore
+        // them
+        for (int i = 0; i <= binContents.size() - 1; i++) {
+          if (binContents[i] == 0) {
+            bin_index = i + 1; // Use the next bin for normalization if the
+            // current bin is empty
+          } else {
+            break;
+          }
+        }
+
+        // Inspect the bin contents of the wave amplitude histogram
+        // for better understanding of the noise level, gamma signals and the
+        // neutron relates signals
+
+        // // Print the info
+        // std::cout << "Using bin " << bin_index << "a s the base index!"
+        //           << std::endl;
+        // std::cout << std::endl;
+
+        // Print the info
+        // It will print the decrease in a bin with respect to the previous one
+        std::cout << "Bin counts relative to the first bin:" << std::endl;
+        for (int i = 0; i <= binContents.size() - 1; i++) {
+          double relativeCount = 0.0;
+          if (binContents[i] == 0) {
+            // current bin is empty
+            continue; // Skip this bin if it has zero count to avoid division by
+                      // zero
+          } else {
+
+            if (i == 0) {
+              relativeCount = static_cast<double>(binContents[i]) /
+                              binContents[i]; // Relative count compared
+              // to the next bin
+              std::cout << "Bin " << i
+                        << ": Center = " << hWaveformAmpl->GetBinCenter(i + 1)
+                        << " mV"
+                        << ", Count = " << binContents[i]
+                        << ", Base Count = " << relativeCount
+                        << " % | First Bin" << std::endl;
+            } else if (i != 0 && binContents[i - 1] == 0) {
+              relativeCount = static_cast<double>(binContents[i]) /
+                              binContents[i]; // Relative count compared
+              // to the next bin
+              std::cout << "Bin " << i
+                        << ": Center = " << hWaveformAmpl->GetBinCenter(i + 1)
+                        << " mV"
+                        << ", Count = " << binContents[i]
+                        << ", Relative Count = " << 0 << " % | Zero Bin"
+                        << std::endl;
+
+            } else if (i != 0 && binContents[i - 1] != 0) {
+              // relativeCount = static_cast<double>(binContents[i]) /
+              //                 binContents[i + 1]; // Relative count compared
+              relativeCount =
+                  binContents[i] /
+                  static_cast<double>(
+                      binContents[bin_index]); // Relative count compared
+              // to the next bin
+              std::cout << "Bin " << i
+                        << ": Center = " << hWaveformAmpl->GetBinCenter(i + 1)
+                        << " mV"
+                        << ", Count = "
+                        << binContents[i]
+                        // << ", Relative Count = " << relativeCount * 100. << "
+                        // % " << binContents[i + 1] << " / " << binContents[i]
+                        << ", Relative Decrease = " << relativeCount * 100.
+                        << " % " << std::endl;
+            }
+          }
+        }
+        std::cout << std::endl;
+      }
+
+      //---------------------------------------------------------------------------------------------------------------//
+      acanv->cd(); // change to the event canvas
+      // // Set the title and axis labels for the waveform graph
+
+      hWaveformAmpl->Draw("hist"); // Draw the waveform
+      acanv->Modified();
+      acanv->Update();
 
       // Print the event information
       std::cout << "Event " << eventNo << "\t fit1 " << fitstatus1 << " fit2 "
@@ -1208,7 +1555,6 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
       // ========== DRAW WAVEFORM CANVAS ==========
       // for (int ci = 0; ci < 1; ci++) {
-      int ci = 0;  // Only draw channel 1 (C1) for now
       ecanv->cd(); // change to the event canvas
       // Create a TGraph for the waveform of the current event
       waveform = new TGraph(maxpoints, ptime, amplC);
@@ -1218,12 +1564,15 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
       minc[ci] = TMath::MinElement(maxpoints, amplC);
 
       // Set the title and axis labels for the waveform graph
-      snprintf(cname, sizeof(cname), "Event %d Waveform C%d\n", eventNo,
-               ci + 1);
+      // snprintf(cname, sizeof(cname), "Event %d Waveform C%d\n", eventNo,
+              //  ci + 1);
+      snprintf(cname, sizeof(cname), "");
       // Set the title and axis labels for the waveform graph
       waveform->SetTitle(cname);
-      waveform->SetLineColor(clr[ci]);
-      waveform->SetMarkerColor(clr[ci]);
+      // waveform->SetLineColor(clr[ci]);
+      waveform->SetLineColor(kBlack);
+      waveform->SetMarkerColor(kBlack);
+      // waveform->SetMarkerColor(clr[ci]);
       waveform->SetFillColor(0);
       waveform->Draw("apl"); // Draw the waveform
       // Set the axis titles even the waveform historam is not used
@@ -1288,7 +1637,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
       TLatex l;
       l.SetNDC(kTRUE);
       l.SetTextColor(kRed);
-      l.DrawLatex(0.25, 0.86, ss.str().c_str());
+      // l.DrawLatex(0.25, 0.86, ss.str().c_str());
       ecanv->Modified();
       ecanv->Update();
       gSystem->ProcessEvents(); // Force ROOT to process GUI events
@@ -1376,19 +1725,12 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
       std::cout << "\n========================================" << std::endl;
       std::cout << "Interact with the canvases!" << std::endl;
-      std::cout << "Press ENTER in the TERMINAL (not on canvas) when done..."
+      std::cout << "Press ENTER in the 'q' in the EVENT CANVAS when done..."
                 << std::endl;
       std::cout << "========================================" << std::endl;
 
-      // THIS IS THE KEY - Keep ROOT's event loop running
-      // The program will stay here until canvases are closed
-      // gApplication->Run();
-      // This enters ROOT's native event loop
-      // The canvases will be fully interactive
-      // gApplication->Run();
-
+      // Wait the user entry on the Event Canvas
       ecanv->WaitPrimitive();
-    
 
       // Saving the plots after user interaction
       ecanv->SaveAs(
@@ -1494,7 +1836,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
       int cut1 = spar[ntrigs].charge / spar[ntrigs].ampl > 700. &&
                  spar[ntrigs].charge / spar[ntrigs].ampl < 1600.;
-      // 	  cut1 =1;
+      cut1 =1;
       hPW->Fill(spar[ntrigs].width);
       if (ntrigs > 0) {
         hDt->Fill((spar[ntrigs].t10 - spar[ntrigs - 1].t10) *
@@ -2043,7 +2385,8 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
    rpad->SetTopMargin(0.01);
    rpad->SetTopMargin(0.008);
    rpad->SetBottomMargin(0.185);
-   rpad->SetFrameBorderMode(0);*/ ///To place it in same canvas as hRateStructure
+   rpad->SetFrameBorderMode(0);*/
+  /// To place it in same canvas as hRateStructure
 
   //   rcanv->Update();
   rcanv->cd(3);
