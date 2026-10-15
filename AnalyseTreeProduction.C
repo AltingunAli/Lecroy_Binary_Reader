@@ -614,7 +614,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   }
 
   double pwMax = 400.;  // Maximum pulse width [ns]
-  double rtMax = 120.;  // Maximum rise time [ns] (10% to 90%)
+  double rtMax = 250.;  // Maximum rise time [ns] (10% to 90%)
   double totMax = 400.; // Maximum Time-Over-Threshold [ns]
   double rbins = 20;    // Number of bins for rate histograms
   double rmax = 20.;    // Maximum range value
@@ -953,7 +953,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   //******************************************************************************************//
 
   //******************************************************************************************//
-  ///  pulse time properties plots
+  ///  Pulse time properties plots
 
   snprintf(htitle, sizeof(htitle), "Rise Time , n_{th} = %g mV", nTh * 1000);
   snprintf(fname2, sizeof(fname2), "S%03d_run%02d_Risetime_%s", detNo, runNo,
@@ -977,7 +977,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   ///  Correlation plots
   double chovamax = 2000.;
   // if (dv <= 50 || vm > 490)
-    // chovamax = 800.;
+  // chovamax = 800.;
 
   snprintf(htitle, sizeof(htitle), "Charge over Amplitude");
   snprintf(hname, sizeof(hname), "S%03d_run%02d_Charge_ov_Amplitude_%s", detNo,
@@ -1023,6 +1023,9 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   snprintf(htitle, sizeof(htitle), "Rise Time (n_{th} = %g mV)", nTh * 1000);
   hNeutronsRT = new TH1D(fname2, htitle, int(rtMax / dt), 0., rtMax);
   hNeutronsRT->GetXaxis()->SetTitle("Risetime [ns]");
+  hNeutronsRT->GetXaxis()->CenterTitle();
+  hNeutronsRT->GetYaxis()->SetTitle("Counts");
+  hNeutronsRT->GetYaxis()->CenterTitle();
 
   snprintf(fname2, sizeof(fname2),
            "S%03d_run%02d_Pulse_Width_NeutronsTh%gmV_%s", detNo, runNo,
@@ -1306,7 +1309,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
         // Print the info
         // It will print the decrease in a bin with respect to the previous one
         std::cout << "Bin counts relative to the first bin:" << std::endl;
-        for (int i = binContents.size() - 1; i > 0; i--) {
+        for (std::size_t i = binContents.size() - 1; i > 0; i--) {
           double relativeCount = 0.0;
           // if (binContents[i] == 0) {
           //   // current bin is empty
@@ -1453,7 +1456,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
         // Loop over all bins and determine if there are empty bins and ignore
         // them
-        for (int i = 0; i <= binContents.size() - 1; i++) {
+        for (std::size_t i = 0; i <= binContents.size() - 1; i++) {
           if (binContents[i] == 0) {
             bin_index = i + 1; // Use the next bin for normalization if the
             // current bin is empty
@@ -1474,7 +1477,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
         // Print the info
         // It will print the decrease in a bin with respect to the previous one
         std::cout << "Bin counts relative to the first bin:" << std::endl;
-        for (int i = 0; i <= binContents.size() - 1; i++) {
+        for (std::size_t i = 0; i <= binContents.size() - 1; i++) {
           double relativeCount = 0.0;
           if (binContents[i] == 0) {
             // current bin is empty
@@ -1565,7 +1568,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
       // Set the title and axis labels for the waveform graph
       // snprintf(cname, sizeof(cname), "Event %d Waveform C%d\n", eventNo,
-              //  ci + 1);
+      //  ci + 1);
       snprintf(cname, sizeof(cname), "");
       // Set the title and axis labels for the waveform graph
       waveform->SetTitle(cname);
@@ -1836,7 +1839,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
       int cut1 = spar[ntrigs].charge / spar[ntrigs].ampl > 700. &&
                  spar[ntrigs].charge / spar[ntrigs].ampl < 1600.;
-      cut1 =1;
+      cut1 = 1;
       hPW->Fill(spar[ntrigs].width);
       if (ntrigs > 0) {
         hDt->Fill((spar[ntrigs].t10 - spar[ntrigs - 1].t10) *
@@ -1869,6 +1872,10 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
                 << ntrigs // Which pulse in this event (1st, 2nd, etc.)
                 << "  t10 = " << spar[ntrigs].t10 // Sample index at 10% of peak
                 << "  t90 = " << spar[ntrigs].t90 // Sample index at 90% of peak
+                << "  Peak time = "
+                << spar[ntrigs].t90 -
+                       spar[ntrigs].t10 // Sample index at 10% of peak
+
                 << "  tb10 = "
                 << spar[ntrigs].tb10 // Sample index at 10% on falling edge
                 << "  ampl = " << spar[ntrigs].ampl // Peak amplitude [V]
@@ -2722,10 +2729,14 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
   gStyle->SetOptFit(111);
 
+  // ###########################################################################################//
+  // ###########################################################################################//
+  // #  		SIGNAL CUTS
+  // ###########################################################################################//
+  // ###########################################################################################//
   TCanvas *sccanv =
       new TCanvas("SignalCuts" + ctypes, "Signal Cuts " + ctypes, 1600, 1100);
   sccanv->Divide(4, 2);
-
   sccanv->cd(1);
   gStyle->SetOptStat(1100);
 
@@ -2766,58 +2777,106 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   hNeutronsRateStructTrigger->Draw("same");
   gPad->BuildLegend();
 
+  // #######################################################################//
+  // Rise time fit
+
   sccanv->cd(6);
   gStyle->SetOptStat(1100);
   hNeutronsRT->Draw("");
+
   hRT->Draw("same");
+    // For better visualization
+  double maxY = hRT->GetMaximum();
+  hNeutronsRT->GetYaxis()->SetRangeUser(0., maxY * 1.1);
   hNeutronsRT->SetLineColor(2);
-  TF1 *fgrt = new TF1("fgrt", "gaus", 0., rtMax);
-  fgrt->SetNpx(1000);
-  fgrt->SetParameter(0, hNeutronsRT->GetMaximum());
-  fgrt->SetParameter(1, hNeutronsRT->GetMean());
   hNeutronsRT->Sumw2();
+
+  double peakY = hNeutronsRT->GetMaximum();
+  double peakX = hNeutronsRT->GetBinCenter(hNeutronsRT->GetMaximumBin());
+  double fitMin = peakX - 1.0 * hNeutronsRT->GetRMS();
+  double fitMax = peakX + 0.75 * hNeutronsRT->GetRMS();
+
+  TF1 *fgrt = new TF1("fgrt", "gaus", fitMin, fitMax);
+  fgrt->SetParameters(peakY, peakX, 15);
+
+  // Set parameter names for clarity
+  fgrt->SetParName(0, "Gaus_Amp");
+  fgrt->SetParName(1, "Gaus_Mean");
+  fgrt->SetParName(2, "Gaus_Sigma");
   std::cout << "Fit " << 15 << std::endl;
-  hNeutronsRT->Fit(fgrt, "mb+", "same",
-                   hNeutronsRT->GetMean() - 3 * hNeutronsRT->GetRMS(),
-                   hNeutronsRT->GetMean() + 3 * hNeutronsRT->GetRMS());
-  //  hNeutronsRT->Draw("same");
+  hNeutronsRT->Fit(fgrt, "mb+", "", fitMin, fitMax);
+
+  // Store results
   runpar->risetime = fgrt->GetParameter(1);
   runpar->srisetime = fgrt->GetParameter(2);
+
+  std::cout << "Risetime = " << runpar->risetime << " +/- " << runpar->srisetime
+            << " ns" << std::endl;
+  std::cout << "Gaussian Sigma = " << fgrt->GetParameter(2) << " +/- "
+            << fgrt->GetParError(2) << " ns" << std::endl;
+  std::cout << "Reduced chi2 = " << fgrt->GetChisquare() / fgrt->GetNDF()
+            << std::endl;
+
+  // #######################################################################//
+  // Pulse Width fit
 
   sccanv->cd(4);
   hNeutronsPW->SetLineColor(2);
   hNeutronsPW->Draw("");
   hPW->Draw("same");
-  TF1 *fgw = new TF1("fgw", "gaus", 0., pwMax);
-  fgw->SetNpx(1000);
-  fgw->SetParameter(0, hNeutronsPW->GetMaximum());
-  runpar->width = hNeutronsPW->GetMean();
-  fgw->SetParameter(1, runpar->width);
   hNeutronsPW->Sumw2();
+
+  double peakYpw = hNeutronsPW->GetMaximum();
+  double peakXpw = hNeutronsPW->GetMean();
+  double fitMinpw = peakXpw - 1.2 * hNeutronsPW->GetRMS();
+  double fitMaxpw = peakXpw + 0.75 * hNeutronsPW->GetRMS();
+
+  TF1 *fgw = new TF1("fgrt", "gaus", fitMinpw, fitMaxpw);
+  fgw->SetParameters(peakYpw, peakXpw, 15);
+
+  // Set parameter names for clarity
+  fgw->SetParName(0, "Gaus_AmpPW");
+  fgw->SetParName(1, "Gaus_MeanPW");
+  fgw->SetParName(2, "Gaus_SigmaPW");
+
   std::cout << "Fit " << 16 << std::endl;
-  hNeutronsPW->Fit(fgw, "mb+", "same",
-                   runpar->width - 3 * hNeutronsPW->GetRMS(),
-                   runpar->width + 3 * hNeutronsPW->GetRMS());
+  hNeutronsPW->Fit(fgw, "mb+", "same", fitMinpw, fitMaxpw); //
   runpar->width = fgw->GetParameter(1);
   runpar->swidth = fgw->GetParameter(2);
 
+  std::cout << "Pulse width = " << runpar->width << " +/- " << runpar->swidth
+            << " ns" << std::endl;
+  std::cout << "Gaussian Sigma = " << fgw->GetParameter(2) << " +/- "
+            << fgw->GetParError(2) << " ns" << std::endl;
+  std::cout << "Reduced chi2 = " << fgw->GetChisquare() / fgw->GetNDF()
+            << std::endl;
+  // #######################################################################//
+  // TOT fit
   sccanv->cd(3);
   hNeutronsTOT->Draw("");
   hTOT->Draw("same");
   hNeutronsTOT->SetLineColor(2);
-  TF1 *fgtot = new TF1("fgtot", "gaus", 0., rtMax);
+
+  double peakYtot = hNeutronsTOT->GetMaximum();
+  double peakXtot = hNeutronsTOT->GetMean();
+
+  // double fitMintot = peakXtot - 1.2 * hNeutronsPW->GetRMS();
+  double fitMintot = 40;
+
+  double fitMaxtot = peakXtot + 0.75 * hNeutronsPW->GetRMS();
+
+  TF1 *fgtot = new TF1("fgtot", "gaus", fitMintot, rtMax);
   fgtot->SetNpx(1000);
   fgtot->SetParameter(0, hNeutronsTOT->GetMaximum());
   fgtot->SetParameter(1, hNeutronsTOT->GetMean());
   hNeutronsTOT->Sumw2();
   std::cout << "Fit " << 17 << std::endl;
-  hNeutronsTOT->Fit(fgtot, "mb+", "same",
-                    hNeutronsTOT->GetMean() - 3 * hNeutronsTOT->GetRMS(),
+  hNeutronsTOT->Fit(fgtot, "mb+", "same", fitMintot,
                     hNeutronsTOT->GetMean() + 3 * hNeutronsTOT->GetRMS());
   //  hNeutronsRT->Draw("same");
   runpar->tot = fgtot->GetParameter(1);
   runpar->stot = fgtot->GetParameter(2);
-
+  // ###################################################################### # //
   sccanv->cd(7);
   hAmplvsRT->Draw("colz");
   sccanv->cd(5);
@@ -2829,6 +2888,59 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   sccanv->Update();
   sccanv->SaveAs(".png");
   sccanv->SaveAs(".pdf");
+
+  // double xMin =  hNeutronsRT->GetMean() - 2.1 * hNeutronsRT->GetRMS();
+  // double xMax =  hNeutronsRT->GetMean() + 2.1 * hNeutronsRT->GetRMS(); //
+  // Your tail goes to ~250 ns double peakX =
+  // hNeutronsRT->GetBinCenter(hNeutronsRT->GetMaximumBin()); double peakY =
+  // hNeutronsRT->GetMaximum();
+
+  // TF1 *fgrt =
+  //     new TF1("fgrt", "gaus(0) + [3] * (TMath::Erf((x-[4])/[5]) + 1) / 2",
+  //     xMin,
+  //             xMax); // Fit with a Gaussian + exponential tail
+  // fgrt->SetNpx(1000);
+
+  // // Set parameter names for clarity
+  // fgrt->SetParName(0, "Gaus_Amp");
+  // fgrt->SetParName(1, "Gaus_Mean");
+  // fgrt->SetParName(2, "Gaus_Sigma");
+  // fgrt->SetParName(3, "Tail_Amp");
+  // fgrt->SetParName(4, "Tail_Center");
+  // fgrt->SetParName(5, "Tail_Width");
+
+  // // fgrt->SetParameter(0, hNeutronsRT->GetMaximum());
+  // // fgrt->SetParameter(1, hNeutronsRT->GetMean());
+  // // Set initial parameters
+  // fgrt->SetParameter(0, peakY * 0.9); // Gaussian amplitude (~3300)
+  // fgrt->SetParameter(1, peakX);       // Gaussian mean (~80)
+  // fgrt->SetParameter(2, 15.0);        // Gaussian sigma
+  // fgrt->SetParameter(3, peakY * 0.3); // Tail amplitude (~1200)
+  // fgrt->SetParameter(4, peakX + 20);  // Tail center (~100, where tail
+  // starts) fgrt->SetParameter(5, 15.0);        // Tail width (sharpness)
+
+  // // Set parameter limits for physical results
+  // fgrt->SetParLimits(0, 1000, 5000);
+  // fgrt->SetParLimits(1, 60, 100);
+  // fgrt->SetParLimits(2, 5, 30); // Positive sigma
+  // fgrt->SetParLimits(3, 100, 3000);
+  // fgrt->SetParLimits(4, peakX, peakX + 60); // Tail center > peak mean
+  // fgrt->SetParLimits(5, 5, 50);             // Positive width
+
+  // std::cout << "Fit " << 15 << std::endl;
+  // hNeutronsRT->Fit(fgrt, "mb+", "", xMin, xMax);
+  // // hNeutronsRT->Fit(fgrt, "mb+", "same",
+  // //                  hNeutronsRT->GetMean() - 2.0 * hNeutronsRT->GetRMS(),
+  // //                  hNeutronsRT->GetMean() + 1.0 * hNeutronsRT->GetRMS());
+  // //  hNeutronsRT->Draw("same");
+  // runpar->risetime = fgrt->GetParameter(1);
+  // runpar->srisetime = fgrt->GetParameter(2);
+
+  // fgrt->Draw("same");
+
+  // ###########################################################################################//
+  // #  		END OF SIGNAL CUTS
+  // ###########################################################################################//
 
   /// ....................................................... ///
   /// /////////////// drawing summary plots /////////////////////
@@ -2842,6 +2954,10 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   char stst[1000];
   snprintf(stst, sizeof(stst), "/%s Summary plots\n", ctypes.Data());
   //   psfile->PrintRaw();
+
+  /// ///////////////////////////////////
+  ///  		Performance Plots
+  /// ///////////////////////////////////
 
   TCanvas *pcanv =
       new TCanvas("Performace_" + ctypes, "Performance " + ctypes, 1600, 1100);
@@ -3041,20 +3157,37 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   //  psfile = new TPostScript(psname,4121);
   //  psfile->NewPage();
 
+  // ###########################################################################################//
+  // ###########################################################################################//
+  // #  		                          SIGNAL TIMING CUTS
+  // ###########################################################################################//
+  // ###########################################################################################//
   TCanvas *scanv =
       new TCanvas("Signals_" + ctypes, "Signal timing " + ctypes, 1600, 1100);
+
+  // Divide the canvas into 3 columns and 2 rows
   scanv->Divide(3, 2);
 
+  // Select the first pad and draw the first histogram
   scanv->cd(1);
   gStyle->SetOptStat(1100);
   hNeutronsRT->Draw("");
+  // hNeutronsRT->GetXaxis()->SetRangeUser(0.,400);
+  gPad->Modified();
+  gPad->Update();
   hRT->Draw("same");
+  // For better visualization
+  maxY = hRT->GetMaximum();
+  hNeutronsRT->GetYaxis()->SetRangeUser(0., maxY * 1.1);
+  // hRT->GetXaxis()->SetRangeUser(0., 300.);
+
   //  fgrt->SetNpx(1000);
 
   scanv->cd(2);
   hNeutronsPW->SetLineColor(2);
   hNeutronsPW->Draw("");
   hPW->Draw("same");
+  // hNeutronsPW->GetXaxis()->SetRangeUser(0., 750.);
   //  fgw->SetNpx(1000);
 
   scanv->cd(3);
