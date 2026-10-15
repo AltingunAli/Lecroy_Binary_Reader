@@ -2863,74 +2863,58 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   hTOT->Draw("same");
   hNeutronsTOT->SetLineColor(2);
 
-  // double peakYtot = hNeutronsTOT->GetMaximum();
-  // double peakXtot = hNeutronsTOT->GetMean();
+  // Find the maximum peak after 50 ns 
+  int startBin = hNeutronsTOT->FindBin(50.0);
+  int totalBins = hNeutronsTOT->GetNbinsX();
 
-  // // double fitMintot = peakXtot - 1.2 * hNeutronsPW->GetRMS();
-  // double fitMintot = 50;
-  // double fitMaxtot = peakXtot + 0.75 * hNeutronsPW->GetRMS();
+  double peakYtot = 0.0;
+  int maxBin = startBin;
 
-  // TF1 *fgtot = new TF1("fgtot", "gaus", 100, 170);
-  // fgtot->SetNpx(1000);
-  // fgtot->SetParameter(0, hNeutronsTOT->GetMaximum());
-  // fgtot->SetParameter(1, hNeutronsTOT->GetMean());
-  // hNeutronsTOT->Sumw2();
-  // std::cout << "Fit " << 17 << std::endl;
-  // hNeutronsTOT->Fit(fgtot, "mb+", "same", fitMintot,
-  //                   hNeutronsTOT->GetMean() + 2 * hNeutronsTOT->GetRMS());
-
-// 1. Find the maximum peak after 50 ns (same as before)
-int startBin = hNeutronsTOT->FindBin(50.0);
-int totalBins = hNeutronsTOT->GetNbinsX();
-
-double peakYtot = 0.0;
-int maxBin = startBin;
-
-for (int i = startBin; i <= totalBins; ++i) {
+  for (int i = startBin; i <= totalBins; ++i) {
     double currentContent = hNeutronsTOT->GetBinContent(i);
     if (currentContent > peakYtot) {
-        peakYtot = currentContent;
-        maxBin = i;
+      peakYtot = currentContent;
+      maxBin = i;
     }
-}
-double peakXtot = hNeutronsTOT->GetBinCenter(maxBin);
-double halfMax = peakYtot / 2.0;
+  }
+  double peakXtot = hNeutronsTOT->GetBinCenter(maxBin);
+  double halfMax = peakYtot / 2.0;
 
-// 2. Automate Left Boundary (Scan left from peak)
-int leftBin = maxBin;
-while (leftBin > startBin && hNeutronsTOT->GetBinContent(leftBin) > halfMax) {
+  // Automate Left Boundary (Scan left from peak)
+  int leftBin = maxBin;
+  while (leftBin > startBin && hNeutronsTOT->GetBinContent(leftBin) > halfMax) {
     leftBin--;
-}
-double leftX = hNeutronsTOT->GetBinCenter(leftBin);
+  }
+  double leftX = hNeutronsTOT->GetBinCenter(leftBin);
 
-// 3. Automate Right Boundary (Scan right from peak)
-int rightBin = maxBin;
-while (rightBin < totalBins && hNeutronsTOT->GetBinContent(rightBin) > halfMax) {
+  // Automate Right Boundary (Scan right from peak)
+  int rightBin = maxBin;
+  while (rightBin < totalBins &&
+         hNeutronsTOT->GetBinContent(rightBin) > halfMax) {
     rightBin++;
-}
-double rightX = hNeutronsTOT->GetBinCenter(rightBin);
+  }
+  double rightX = hNeutronsTOT->GetBinCenter(rightBin);
 
-// 4. Calculate dynamic width (FWHM)
-double fwhm = rightX - leftX;
+  // Calculate dynamic width (FWHM)
+  double fwhm = rightX - leftX;
 
-// Standard Gaussian relation: FWHM = 2.355 * Sigma
-double sigmaGuess = fwhm / 2.355; 
+  // Standard Gaussian relation: FWHM = 2.355 * Sigma
+  double sigmaGuess = fwhm / 2.355;
 
-// Expand range slightly to capture the tails (e.g., 1.5 * FWHM total width)
-double fitMintot = peakXtot - (0.35 * fwhm);
-double fitMaxtot = peakXtot + (0.6 * fwhm);
+  // Expand range slightly to capture the tails (e.g., 1.5 * FWHM total width)
+  double fitMintot = peakXtot - (0.35 * fwhm);
+  double fitMaxtot = peakXtot + (0.6 * fwhm);
 
-// 5. Run the Fit
-TF1 *fgtot = new TF1("fgtot", "gaus", fitMintot, fitMaxtot);
-fgtot->SetNpx(1000);
+  // Run the Fit
+  TF1 *fgtot = new TF1("fgtot", "gaus", fitMintot, fitMaxtot);
+  fgtot->SetNpx(1000);
 
-fgtot->SetParameter(0, peakYtot);   // Amplitude guess
-fgtot->SetParameter(1, peakXtot);   // Mean guess
-fgtot->SetParameter(2, sigmaGuess); // Highly accurate Sigma guess
+  fgtot->SetParameter(0, peakYtot);   // Amplitude guess
+  fgtot->SetParameter(1, peakXtot);   // Mean guess
+  fgtot->SetParameter(2, sigmaGuess); // Highly accurate Sigma guess
 
-hNeutronsTOT->Sumw2();
-hNeutronsTOT->Fit(fgtot, "RM+");
-
+  hNeutronsTOT->Sumw2();
+  hNeutronsTOT->Fit(fgtot, "RM+");
 
   //  hNeutronsRT->Draw("same");
   runpar->tot = fgtot->GetParameter(1);
