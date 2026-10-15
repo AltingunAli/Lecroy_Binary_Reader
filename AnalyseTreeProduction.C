@@ -1033,12 +1033,18 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   snprintf(htitle, sizeof(htitle), "Pulse Width (n_{th} = %g mV)", nTh * 1000);
   hNeutronsPW = new TH1D(fname2, htitle, int(pwMax / dt), 0., pwMax);
   hNeutronsPW->GetXaxis()->SetTitle("Pulse Duration [ns]");
+  hNeutronsPW->GetXaxis()->CenterTitle();
+  hNeutronsPW->GetYaxis()->SetTitle("Counts");
+  hNeutronsPW->GetYaxis()->CenterTitle();
 
   snprintf(fname2, sizeof(fname2), "S%03d_run%02d_TOT_NeutronsTh%gmV_%s", detNo,
            runNo, nTh * mV, ftype);
   snprintf(htitle, sizeof(htitle), "TOT  (n_{th} = %g mV)", nTh * 1000);
   hNeutronsTOT = new TH1D(fname2, htitle, int(totMax / dt), 0., totMax);
   hNeutronsTOT->GetXaxis()->SetTitle("TOT [ns]");
+  hNeutronsTOT->GetXaxis()->CenterTitle();
+  hNeutronsTOT->GetYaxis()->SetTitle("Counts");
+  hNeutronsTOT->GetYaxis()->CenterTitle();
   //******************************************************************************************//
 
   // number of points to integrate for the charge calculation
@@ -2785,7 +2791,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   hNeutronsRT->Draw("");
 
   hRT->Draw("same");
-    // For better visualization
+  // For better visualization
   double maxY = hRT->GetMaximum();
   hNeutronsRT->GetYaxis()->SetRangeUser(0., maxY * 1.1);
   hNeutronsRT->SetLineColor(2);
@@ -2857,22 +2863,75 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   hTOT->Draw("same");
   hNeutronsTOT->SetLineColor(2);
 
-  double peakYtot = hNeutronsTOT->GetMaximum();
-  double peakXtot = hNeutronsTOT->GetMean();
+  // double peakYtot = hNeutronsTOT->GetMaximum();
+  // double peakXtot = hNeutronsTOT->GetMean();
 
-  // double fitMintot = peakXtot - 1.2 * hNeutronsPW->GetRMS();
-  double fitMintot = 40;
+  // // double fitMintot = peakXtot - 1.2 * hNeutronsPW->GetRMS();
+  // double fitMintot = 50;
+  // double fitMaxtot = peakXtot + 0.75 * hNeutronsPW->GetRMS();
 
-  double fitMaxtot = peakXtot + 0.75 * hNeutronsPW->GetRMS();
+  // TF1 *fgtot = new TF1("fgtot", "gaus", 100, 170);
+  // fgtot->SetNpx(1000);
+  // fgtot->SetParameter(0, hNeutronsTOT->GetMaximum());
+  // fgtot->SetParameter(1, hNeutronsTOT->GetMean());
+  // hNeutronsTOT->Sumw2();
+  // std::cout << "Fit " << 17 << std::endl;
+  // hNeutronsTOT->Fit(fgtot, "mb+", "same", fitMintot,
+  //                   hNeutronsTOT->GetMean() + 2 * hNeutronsTOT->GetRMS());
 
-  TF1 *fgtot = new TF1("fgtot", "gaus", fitMintot, rtMax);
-  fgtot->SetNpx(1000);
-  fgtot->SetParameter(0, hNeutronsTOT->GetMaximum());
-  fgtot->SetParameter(1, hNeutronsTOT->GetMean());
-  hNeutronsTOT->Sumw2();
-  std::cout << "Fit " << 17 << std::endl;
-  hNeutronsTOT->Fit(fgtot, "mb+", "same", fitMintot,
-                    hNeutronsTOT->GetMean() + 3 * hNeutronsTOT->GetRMS());
+// 1. Find the maximum peak after 50 ns (same as before)
+int startBin = hNeutronsTOT->FindBin(50.0);
+int totalBins = hNeutronsTOT->GetNbinsX();
+
+double peakYtot = 0.0;
+int maxBin = startBin;
+
+for (int i = startBin; i <= totalBins; ++i) {
+    double currentContent = hNeutronsTOT->GetBinContent(i);
+    if (currentContent > peakYtot) {
+        peakYtot = currentContent;
+        maxBin = i;
+    }
+}
+double peakXtot = hNeutronsTOT->GetBinCenter(maxBin);
+double halfMax = peakYtot / 2.0;
+
+// 2. Automate Left Boundary (Scan left from peak)
+int leftBin = maxBin;
+while (leftBin > startBin && hNeutronsTOT->GetBinContent(leftBin) > halfMax) {
+    leftBin--;
+}
+double leftX = hNeutronsTOT->GetBinCenter(leftBin);
+
+// 3. Automate Right Boundary (Scan right from peak)
+int rightBin = maxBin;
+while (rightBin < totalBins && hNeutronsTOT->GetBinContent(rightBin) > halfMax) {
+    rightBin++;
+}
+double rightX = hNeutronsTOT->GetBinCenter(rightBin);
+
+// 4. Calculate dynamic width (FWHM)
+double fwhm = rightX - leftX;
+
+// Standard Gaussian relation: FWHM = 2.355 * Sigma
+double sigmaGuess = fwhm / 2.355; 
+
+// Expand range slightly to capture the tails (e.g., 1.5 * FWHM total width)
+double fitMintot = peakXtot - (0.35 * fwhm);
+double fitMaxtot = peakXtot + (0.6 * fwhm);
+
+// 5. Run the Fit
+TF1 *fgtot = new TF1("fgtot", "gaus", fitMintot, fitMaxtot);
+fgtot->SetNpx(1000);
+
+fgtot->SetParameter(0, peakYtot);   // Amplitude guess
+fgtot->SetParameter(1, peakXtot);   // Mean guess
+fgtot->SetParameter(2, sigmaGuess); // Highly accurate Sigma guess
+
+hNeutronsTOT->Sumw2();
+hNeutronsTOT->Fit(fgtot, "RM+");
+
+
   //  hNeutronsRT->Draw("same");
   runpar->tot = fgtot->GetParameter(1);
   runpar->stot = fgtot->GetParameter(2);
@@ -3179,10 +3238,9 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   // For better visualization
   maxY = hRT->GetMaximum();
   hNeutronsRT->GetYaxis()->SetRangeUser(0., maxY * 1.1);
-  // hRT->GetXaxis()->SetRangeUser(0., 300.);
-
   //  fgrt->SetNpx(1000);
 
+  // Select the second pad and draw the second histogram
   scanv->cd(2);
   hNeutronsPW->SetLineColor(2);
   hNeutronsPW->Draw("");
@@ -3190,6 +3248,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   // hNeutronsPW->GetXaxis()->SetRangeUser(0., 750.);
   //  fgw->SetNpx(1000);
 
+  // Select the third pad and draw the third histogram
   scanv->cd(3);
   hNeutronsTOT->Draw("");
   hTOT->Draw("same");
