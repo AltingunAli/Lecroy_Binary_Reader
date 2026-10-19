@@ -883,6 +883,10 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   snprintf(htitle, sizeof(htitle), "#DeltaT neutrons");
   hNeutronsDt = new TH1D(hname, htitle, dtbins, 0., tmax);
   hNeutronsDt->GetXaxis()->SetTitle("#DeltaT [sec]");
+  hNeutronsDt->GetXaxis()->CenterTitle();
+  hNeutronsDt->GetYaxis()->SetTitle("Counts");
+  hNeutronsDt->GetYaxis()->CenterTitle();
+
   //******************************************************************************************//
 
   //******************************************************************************************//
@@ -1873,23 +1877,26 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
 
       otree->Fill();
 
-      std::cout << "Event " << eventNo // Event number
-                << "  Trigger "
-                << ntrigs // Which pulse in this event (1st, 2nd, etc.)
-                << "  t10 = " << spar[ntrigs].t10 // Sample index at 10% of peak
-                << "  t90 = " << spar[ntrigs].t90 // Sample index at 90% of peak
-                << "  Peak time = "
-                << spar[ntrigs].t90 -
-                       spar[ntrigs].t10 // Sample index at 10% of peak
+      // std::cout << "Event " << eventNo // Event number
+      //           << "  Trigger "
+      //           << ntrigs // Which pulse in this event (1st, 2nd, etc.)
+      //           << "  t10 = " << spar[ntrigs].t10 // Sample index at 10% of
+      //           peak
+      //           << "  t90 = " << spar[ntrigs].t90 // Sample index at 90% of
+      //           peak
+      //           << "  Peak time = "
+      //           << spar[ntrigs].t90 -
+      //                  spar[ntrigs].t10 // Sample index at 10% of peak
 
-                << "  tb10 = "
-                << spar[ntrigs].tb10 // Sample index at 10% on falling edge
-                << "  ampl = " << spar[ntrigs].ampl // Peak amplitude [V]
-                << "  charge = "
-                << spar[ntrigs].charge // Integrated charge [V·ns]
-                << "  width = " << spar[ntrigs].width // Pulse width in samples
-                << "  tot = " << spar[ntrigs].tot
-                << std::endl; // Time-over-threshold in samples
+      //           << "  tb10 = "
+      //           << spar[ntrigs].tb10 // Sample index at 10% on falling edge
+      //           << "  ampl = " << spar[ntrigs].ampl // Peak amplitude [V]
+      //           << "  charge = "
+      //           << spar[ntrigs].charge // Integrated charge [V·ns]
+      //           << "  width = " << spar[ntrigs].width // Pulse width in
+      //           samples
+      //           << "  tot = " << spar[ntrigs].tot
+      //           << std::endl; // Time-over-threshold in samples
 
       // //-----------------------------
       // //doubling histos for nthreshold
@@ -1994,28 +2001,28 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
       }
       tlast = tnow;
 
-      if (eventNo > 0 && npeaksNeutrons > 0) {
+      // if (eventNo > 0 && npeaksNeutrons > 0) {
 
-        depoch = 1. * (long double)epoch;
-        tnowneutrons = depoch + nn * 1e-9 +
-                       spar[ntrigsNeutrons - 1].t10 *
-                           1e-9; /// used for dt calculation for neutrons
-        dtlastneutrons = tnowneutrons - tlastneutrons;
-        // 	  if (dtlastneutrons<0)
-        // 	  {
-        // 	    cout<<"negative DT!!!!\n event ="<<eventNo<<std::endl;
-        // 	    printf("tnow = %18.8lf,    tlast =  %18.8lf ,     DT =
-        // %18.8lf\n",tnowneutrons,tlastneutrons,dtlastneutrons);
-        //  	    cout<<"tnow = "<<tnowneutrons<<"  tlast =
-        //  "<<tlastneutrons<<"    DT = "<< dtlastneutrons<<std::endl;
-        // 	  }
-        //  	  printf("tnow = %Lf,    tlast =  %Lf ,     DT =
-        //  %Lf\n",tnowneutrons,tlastneutrons,dtlastneutrons);
-        // 	  cout<<"tnow = "<<tnowneutrons<<"  tlast = "<<tlastneutrons<<"
-        // DT = "<< dtlastneutrons<<std::endl;
-        hNeutronsDt->Fill(dtlastneutrons);
-        tlastneutrons = tnowneutrons;
-      }
+      //   depoch = 1. * (long double)epoch;
+      //   tnowneutrons = depoch + nn * 1e-9 +
+      //                  spar[ntrigsNeutrons - 1].t10 *
+      //                      1e-9; /// used for dt calculation for neutrons
+      //   dtlastneutrons = tnowneutrons - tlastneutrons;
+      //   // 	  if (dtlastneutrons<0)
+      //   // 	  {
+      //   // 	    cout<<"negative DT!!!!\n event ="<<eventNo<<std::endl;
+      //   // 	    printf("tnow = %18.8lf,    tlast =  %18.8lf ,     DT =
+      //   // %18.8lf\n",tnowneutrons,tlastneutrons,dtlastneutrons);
+      //   //  	    cout<<"tnow = "<<tnowneutrons<<"  tlast =
+      //   //  "<<tlastneutrons<<"    DT = "<< dtlastneutrons<<std::endl;
+      //   // 	  }
+      //   //  	  printf("tnow = %Lf,    tlast =  %Lf ,     DT =
+      //   //  %Lf\n",tnowneutrons,tlastneutrons,dtlastneutrons);
+      //   // 	  cout<<"tnow = "<<tnowneutrons<<"  tlast = "<<tlastneutrons<<"
+      //   // DT = "<< dtlastneutrons<<std::endl;
+      //   hNeutronsDt->Fill(dtlastneutrons);
+      //   tlastneutrons = tnowneutrons;
+      // }
       //         tlastneutrons = tnowneutrons ;
     }
 
@@ -2453,22 +2460,25 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   rcanv->cd(4);
   double ttot = tmax - 0.;
   // exponential fit
-  TF1 *f1 = new TF1("f1", "[0]*exp(-[1]*x)", 0., 200.);
+  // Define the TF1 with properly scaled units (0.03 ms to 0.1 ms)
+  TF1 *f1 = new TF1("f1", "[0]*exp(-[1]*x)", 0.01e-3, 0.05e-3);;
 
   f1->SetParLimits(1, 1e-6, 1e6);
   f1->SetParLimits(0, 1e-6, 1e6);
-
   f1->SetParameter(0, nevents / 5.);
   f1->SetParameter(1, exprate);
   f1->SetLineColor(4);
 
+  std::cout << "Neutron Rate from the plot: " << exprate << std::endl;
   hDt->Sumw2(1);
   hNeutronsDt->Sumw2(1);
 
   double tbeam = 5e-6;
-
   std::cout << "Fit " << 12 << std::endl;
-  hDt->Fit(f1, "+QB0", "", tmax / 20., tmax); // crate[4]);
+
+  // FIXED: Using scaled window limits to match the internal seconds unit
+  hDt->Fit(f1, "+QB0", "", 0.01e-3, 0.05e-3);;
+  // hDt->Fit(f1, "+QB0", "", tmax / 20., tmax); // crate[4]);
 
   double rates = 1. * f1->GetParameter(1);
   char title[100];
@@ -2488,28 +2498,35 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   hDt->SetMaximum(hDt->GetMaximum() * 2.);
 
   hNeutronsDt->Draw("same");
-
-  TF1 *f11 = new TF1("f11", "[0]*exp(-[1]*x)", 0., tmax * 2.);
-  //  f11->SetParLimits(1,1e2,1e6);
-  //  f11->SetParameter(1,1e3);
-  //  f11->SetLineColor(kBlue+2);
-  //  hDt->Fit(f11,"+QB0","",0.,tbeam);//crate[4]);
-
-  /* if(bkg)
-      flinear->Draw("same");
-      else*/
+  // TF1 *f11 = new TF1("f11", "[0]*exp(-[1]*x)", 0., tmax * 2.);
   f1->Draw("same");
   //  f11->Draw("same");
 
   hNeutronsDt->SetLineColor(kRed + 1);
-  TF1 *f12 = new TF1("f12", "[0]*exp(-[1]*x)", 0., tmax * 2);
+
+  // TF1 *f12 = new TF1("f12", "[0]*exp(-[1]*x)", 0., tmax * 2);
+  TF1 *f12 = new TF1("f12", "[0]*exp(-[1]*x)", 0.01e-3, 0.05e-3);;
   f12->SetParLimits(1, 1e-6, 1e6);
   f12->SetParameter(0, 120.);
   f12->SetParameter(1, exprate);
   f12->SetParLimits(0, 0.1e-6, 1e6);
+
+  // // old: "[0]*exp(-[1]*x)"
+  // // New version: a constant background added to the exponential function
+  // TF1 *f12 = new TF1("f12", "[0]*exp(-[1]*x) + [2]", 0.03e-3, 0.18e-3);
+  // // Parametre sınırları ve başlangıç değerleri
+  // f12->SetParameter(0, 3200.);    // p0 estimate
+  // f12->SetParameter(1, exprate);  // p1 estimate
+  // f12->SetParameter(2, 7.0);      // p2 (background expectation, ~7-10)
+  // f12->SetParLimits(2, 0.1, 100); // preventing background to be neg, set limit
+
   f12->SetLineColor(kRed + 2);
+  f12->SetLineWidth(3);
+
   std::cout << "Fit " << 13 << std::endl;
-  hNeutronsDt->Fit(f12, "+B0", "", tmax / 100., tmax); // crate[4]);
+
+  //   hNeutronsDt->Fit(f12, "+B0", "", tmax / 100., tmax); // crate[4]);
+  hNeutronsDt->Fit(f12, "+B0", "", 0.01e-3, 0.05e-3);;
   f12->Draw("same");
 
   TPad *pad = (TPad *)gPad;
@@ -2863,7 +2880,7 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   hTOT->Draw("same");
   hNeutronsTOT->SetLineColor(2);
 
-  // Find the maximum peak after 50 ns 
+  // Find the maximum peak after 50 ns
   int startBin = hNeutronsTOT->FindBin(50.0);
   int totalBins = hNeutronsTOT->GetNbinsX();
 
@@ -2998,9 +3015,11 @@ int AnalyseTreeProduction(int detNo = 3, int runNo = 1, int draw = 0,
   snprintf(stst, sizeof(stst), "/%s Summary plots\n", ctypes.Data());
   //   psfile->PrintRaw();
 
-  /// ///////////////////////////////////
-  ///  		Performance Plots
-  /// ///////////////////////////////////
+  // ###########################################################################################//
+  // ###########################################################################################//
+  // #  		PERFORMANCE PLOTS
+  // ###########################################################################################//
+  // ###########################################################################################//
 
   TCanvas *pcanv =
       new TCanvas("Performace_" + ctypes, "Performance " + ctypes, 1600, 1100);
